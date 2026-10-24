@@ -267,7 +267,9 @@ table.runs tr:last-child td { border-bottom: 0; }
 'use strict';
 
 /* ---------- Prompt template for the AI ---------- */
-const PROMPT = `Đọc file đề đính kèm và chuyển TOÀN BỘ câu hỏi trắc nghiệm sang JSON theo đúng cấu trúc sau, không thêm chữ nào ngoài JSON:
+// Questions per AI reply: sets up to this size must be done in one go; longer ones are split into parts of this size.
+const BATCH = 100;
+const PROMPT =`Đọc file đề đính kèm và chuyển TOÀN BỘ câu hỏi trắc nghiệm sang JSON theo đúng cấu trúc sau, không thêm chữ nào ngoài JSON:
 
 {
   "title": "<tên bộ đề>",
@@ -299,9 +301,19 @@ Về đáp án:
 10. Nếu đề là bản quét và có lỗi nhận dạng chữ rõ ràng (ví dụ "(11)" thay cho "(II)", "0" thay cho "O"), hãy sửa lại cho đúng.
 
 Phạm vi và độ dài:
-11. Mặc định phải làm TẤT CẢ các câu có trong đề, không bỏ câu nào. Chỉ khi tôi ghi rõ phạm vi (ví dụ "chỉ làm câu 1–50") thì mới làm đúng phần đó, và vẫn phải làm hết phần đó.
-12. Nếu không thể viết hết trong một lần trả lời vì quá dài: dừng ở câu trọn vẹn cuối cùng (không cắt giữa câu), vẫn đóng JSON đúng cú pháp, rồi ghi thêm một dòng "Còn tiếp: đã làm đến câu N". Khi tôi nhắn "Làm tiếp", tiếp tục từ câu N+1 với đúng quy tắc trên.
-13. Ngoài khối JSON, ghi một dòng: "Tổng: X câu, trong đó Y câu tự giải" (X là số câu có trong lần trả lời này).`;
+11. Mặc định phải làm TẤT CẢ các câu có trong đề, không bỏ câu nào, không viết "...", không ghi kiểu "các câu còn lại tương tự". Chỉ khi tôi ghi rõ phạm vi (ví dụ "chỉ làm câu 1–50") thì mới làm đúng phần đó, và vẫn phải làm hết phần đó.
+12. Đề có từ ${BATCH} câu trở xuống: BẮT BUỘC làm hết trong MỘT lần trả lời. Không được dừng giữa chừng, không được hỏi có muốn làm tiếp không, không được hẹn làm tiếp.
+13. Đề có hơn ${BATCH} câu: chia thành từng phần ĐÚNG ${BATCH} câu (câu 1–${BATCH}, ${BATCH + 1}–${BATCH * 2}…, phần cuối là số câu còn lại). Mỗi lần trả lời làm trọn một phần, không dừng sớm hơn. Cuối phần đó đóng JSON đúng cú pháp, rồi ghi một dòng "Còn tiếp: đã làm đến câu N". Khi tôi nhắn "Làm tiếp", làm phần kế tiếp từ câu N+1 với đúng quy tắc trên. Phần cuối cùng thì không ghi dòng "Còn tiếp".
+14. Ngoài khối JSON, ghi một dòng: "Tổng: X câu (đề có T câu), trong đó Y câu tự giải" (X là số câu có trong lần trả lời này, T là tổng số câu của cả đề).`;
+
+/* Same prompt, but asks the AI to return a .txt file the user can upload in "Thêm bộ đề". */
+const PROMPT_FILE = PROMPT + `
+
+Cách trả kết quả (xuất file):
+15. Không in JSON ra khung chat. Hãy tạo MỘT file .txt để tôi tải về, tên file viết không dấu theo tên bộ đề (ví dụ "De-giua-ky-Tin-hoc.txt"). Nếu đề được chia phần thì mỗi phần một file, thêm "-phan-2", "-phan-3"… vào tên.
+16. Nội dung file gồm khối JSON ở trên, rồi đến dòng "Tổng: …" và dòng "Còn tiếp: …" (nếu có) theo quy tắc 13–14. Không thêm định dạng markdown hay chữ nào khác. Lưu file dạng UTF-8 để giữ đúng dấu tiếng Việt.
+17. Trong khung chat chỉ ghi link tải file và dòng "Tổng: …".
+18. Nếu không tạo được file, hãy trả toàn bộ nội dung đó trong MỘT khối code duy nhất để tôi tự sao chép.`;
 
 /* ---------- Example set (shown until the user deletes it) ---------- */
 const SAMPLE = {
@@ -731,10 +743,14 @@ function viewImport() {
     h('h2', null, 'Thêm bộ đề'),
     h('div', { class: 'stack', style: 'gap:8px' },
       h('p', null, h('b', null, 'Bước 1. '), 'Sao chép prompt, gửi cho AI cùng file đề.'),
-      h('div', { class: 'row' }, btn('Sao chép prompt', () => copyText(PROMPT, 'Đã sao chép prompt'), 'primary')),
-      h('details', { class: 'prompt' }, h('summary', null, 'Xem nội dung prompt'), h('pre', null, PROMPT))),
+      h('div', { class: 'row' },
+        btn('Sao chép prompt', () => copyText(PROMPT, 'Đã sao chép prompt'), 'primary'),
+        btn('Sao chép prompt xuất file .txt', () => copyText(PROMPT_FILE, 'Đã sao chép prompt. AI sẽ trả về file .txt để bạn tải lên ở Bước 2.'))),
+      h('p', { class: 'muted small' }, 'Bản xuất file hợp với đề dài: AI trả về file .txt, bạn tải về rồi chọn file ở Bước 2, không cần sao chép đoạn chữ dài. Dùng được với ChatGPT và Claude. AI nào không tạo được file sẽ trả về một khối code để bạn sao chép.'),
+      h('details', { class: 'prompt' }, h('summary', null, 'Xem nội dung prompt'), h('pre', null, PROMPT)),
+      h('details', { class: 'prompt' }, h('summary', null, 'Xem prompt xuất file .txt'), h('pre', null, PROMPT_FILE))),
     h('div', { class: 'stack', style: 'gap:8px' },
-      h('p', null, h('b', null, 'Bước 2. '), 'Dán kết quả AI trả về, hoặc chọn file .json.'),
+      h('p', null, h('b', null, 'Bước 2. '), 'Dán kết quả AI trả về, hoặc chọn file .txt/.json AI đã tạo.'),
       ta,
       h('div', { class: 'row between' }, file, btn('Kiểm tra dữ liệu', check, 'primary'))));
 
@@ -755,7 +771,7 @@ function importResultPanel(r) {
   if (r.badAnswer.length) notes.push(h('div', { class: 'note warn' }, h('b', null, `${r.badAnswer.length} câu có đáp án không hợp lệ (sẽ coi như thiếu đáp án)`), h('ul', null, r.badAnswer.slice(0, 15).map(s => h('li', null, s)))));
   const list30 = a => a.slice(0, 30).join(', ') + (a.length > 30 ? '…' : '');
   if (r.more) {
-    const ask = `Làm tiếp từ câu ${r.more + 1} đến hết đề, theo đúng cấu trúc JSON và các quy tắc ở trên.`;
+    const ask = `Làm tiếp phần kế tiếp, bắt đầu từ câu ${r.more + 1}, đủ ${BATCH} câu (hoặc đến hết đề nếu còn ít hơn), theo đúng cấu trúc JSON và các quy tắc ở trên. Nếu lần trước bạn xuất file .txt thì lần này cũng xuất file .txt.`;
     notes.push(h('div', { class: 'note warn' },
       h('b', null, `AI mới làm đến câu ${r.more}, đề vẫn còn tiếp`),
       h('span', null, 'Lưu phần này trước. Sau đó nhắn AI câu bên dưới, dán kết quả vào "Thêm bộ đề" và chọn "Thêm vào bộ đề có sẵn" để nối vào.'),
