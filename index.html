@@ -711,6 +711,58 @@ function render(scrollTop) {
 }
 document.getElementById('brandBtn').addEventListener('click', () => { if (view.name !== 'play') go('home'); });
 
+/* ---------- Install to home screen ---------- */
+// Android Chrome / Edge hand us a ready install prompt; iPhone and in-app browsers (Zalo, Messenger…) don't, so we explain the steps.
+let installEvt = null;
+const UA = navigator.userAgent;
+const isIOS = /iPhone|iPad|iPod/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isMobile = isIOS || /Android|Mobi/i.test(UA);
+const isInApp = /FBAN|FBAV|FB_IAB|FBIOS|Messenger|Zalo|Instagram|Line\/|TikTok|musical_ly/i.test(UA);
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const showInstallCard = () => !isStandalone() && !state.settings.hideInstall && (installEvt || isMobile);
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; updateChrome(); });
+const markInstalled = () => { installEvt = null; state.settings.hideInstall = true; save(); updateChrome(); };
+window.addEventListener('appinstalled', () => { markInstalled(); toast('Đã cài xong. Mở "Ôn Đề" từ màn hình chính.', 4000); });
+async function installApp() {
+  if (installEvt) {
+    const e = installEvt;
+    e.prompt();
+    const choice = await e.userChoice.catch(() => null);
+    if (choice && choice.outcome === 'accepted') markInstalled();
+    return;
+  }
+  openInstallHelp();
+}
+function openInstallHelp() {
+  const steps = (...items) => h('ol', { class: 'stack', style: 'gap:8px;padding-left:20px;margin:0' }, items.map(t => h('li', null, t)));
+  let title, body;
+  if (isInApp) {
+    title = 'Mở bằng Chrome hoặc Safari để cài';
+    body = [
+      h('p', null, 'Bạn đang mở trang trong Zalo, Messenger hoặc Facebook. Trình duyệt dựng sẵn của các app này không cài được app, và thường cũng chặn đăng nhập Google.'),
+      steps(
+        'Bấm nút ⋮ hoặc ··· ở góc màn hình.',
+        isIOS ? 'Chọn "Mở bằng Safari" (hoặc "Mở trong trình duyệt").' : 'Chọn "Mở bằng trình duyệt" hoặc "Mở trong Chrome".',
+        'Trong Chrome/Safari, bấm lại nút "Cài app" trên trang chủ.'),
+      h('div', { class: 'row' }, btn('Sao chép link trang', () => copyText(location.href.split('#')[0], 'Đã sao chép link. Dán vào Chrome hoặc Safari.')))];
+  } else if (isIOS) {
+    title = 'Cài lên iPhone / iPad';
+    body = [steps(
+      'Bấm nút Chia sẻ (ô vuông có mũi tên chỉ lên) ở thanh dưới hoặc trên cùng của Safari.',
+      'Kéo xuống, chọn "Thêm vào MH chính".',
+      'Bấm "Thêm" ở góc trên bên phải. Biểu tượng Ôn Đề sẽ hiện trên màn hình chính.'),
+      h('p', { class: 'muted small' }, 'Không thấy mục này? Hãy mở trang bằng Safari. Trên iOS cũ, Chrome chưa hỗ trợ thêm vào màn hình chính.')];
+  } else {
+    title = 'Cài lên điện thoại';
+    body = [steps(
+      'Bấm nút ⋮ ở góc trên bên phải của Chrome.',
+      'Chọn "Cài đặt ứng dụng" hoặc "Thêm vào màn hình chính".',
+      'Bấm "Cài đặt". Biểu tượng Ôn Đề sẽ hiện trên màn hình chính.'),
+      h('p', { class: 'muted small' }, 'Không thấy mục này? Hãy mở trang bằng Chrome, rồi tải lại trang một lần. Nếu app đã được cài rồi thì Chrome sẽ hiện "Mở ứng dụng" thay vì "Cài đặt".')];
+  }
+  const close = openModal(h('h2', null, title), ...body, h('div', { class: 'row' }, btn('Đã hiểu', () => close(), 'primary')));
+}
+
 /* ---------- Home ---------- */
 function setCard(set) {
   const ref = { source: 'local', id: set.id };
@@ -753,6 +805,12 @@ function viewHome() {
   if (!storageOk) parts.push(h('div', { class: 'note bad' },
     h('b', null, 'Trình duyệt này đang không cho lưu dữ liệu'),
     h('span', null, 'Có thể bạn đang ở chế độ ẩn danh, hoặc bộ nhớ đã đầy. Bộ đề và lịch sử sẽ mất khi đóng trang. Hãy tải bản sao lưu ở cuối trang, hoặc mở lại bằng cửa sổ thường.')));
+  if (showInstallCard()) parts.push(h('div', { class: 'note ok' },
+    h('b', null, isMobile ? 'Cài Ôn Đề lên điện thoại' : 'Cài Ôn Đề lên máy'),
+    h('span', null, 'Mở nhanh từ màn hình chính như một app, toàn màn hình, mất mạng vẫn làm bài được.'),
+    h('div', { class: 'row', style: 'margin-top:6px' },
+      btn('Cài app', installApp, 'primary'),
+      btn('Để sau', () => { state.settings.hideInstall = true; save(); refresh(); }, 'ghost'))));
   parts.push(hero);
   if (cloud.status === 'out') parts.push(h('div', { class: 'note ai' },
     h('b', null, 'Đăng nhập để không mất bộ đề khi đổi máy'),
