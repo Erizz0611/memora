@@ -15,7 +15,7 @@
 body { margin: 0; }
 img { max-width: 100%; }
 [hidden] { display: none !important; }
-/* Layout: one centered study column; library as cards, play screen as a big question card over a 2-column grid of colored answer tiles. */
+/* Layout: one centered study column; library as cards, play screen as a big question card over a 2-column grid of answer tiles. */
 :root {
   --bg: #EEF1F6; --surface: #FFFFFF; --surface-2: #F5F7FB; --ink: #141B26; --muted: #586377; --line: #D8DEE8;
   --accent: #2D4FD6; --accent-ink: #FFFFFF; --accent-soft: #E3E9FF;
@@ -196,15 +196,19 @@ table.runs tr:last-child td { border-bottom: 0; }
 .timer.low { background: var(--bad); }
 .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 @media (max-width: 560px) { .tiles { grid-template-columns: 1fr; } }
-.tile { --tile: var(--t1); font: inherit; text-align: left; border: 0; border-radius: 14px; background: var(--tile); color: var(--tile-ink); padding: 16px 16px 16px 14px; min-height: 84px; display: flex; gap: 12px; align-items: center; cursor: pointer; font-size: 1.02rem; font-weight: 600; box-shadow: 0 4px 0 rgb(0 0 0 / .18); transition: transform .12s, opacity .2s, box-shadow .12s, background .2s; position: relative; min-width: 0; }
-.tile:hover:not([disabled]) { transform: translateY(-2px); box-shadow: 0 6px 0 rgb(0 0 0 / .18); }
-.tile:active:not([disabled]) { transform: translateY(2px); box-shadow: 0 2px 0 rgb(0 0 0 / .18); }
-.tile .k { flex: none; width: 32px; height: 32px; border-radius: 8px; background: rgb(255 255 255 / .22); display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: 1.05rem; }
+/* All answer tiles share one calm neutral look; colour only appears for selected / right / wrong. */
+.tile { font: inherit; text-align: left; border: 1.5px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); padding: 16px 16px 16px 14px; min-height: 84px; display: flex; gap: 12px; align-items: center; cursor: pointer; font-size: 1.02rem; font-weight: 600; box-shadow: 0 3px 0 var(--line); transition: transform .12s, opacity .2s, box-shadow .12s, background .2s, border-color .2s; position: relative; min-width: 0; }
+.tile:hover:not([disabled]) { transform: translateY(-2px); box-shadow: 0 5px 0 var(--line); border-color: var(--accent); }
+.tile:active:not([disabled]) { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
+.tile .k { flex: none; width: 32px; height: 32px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: 1.05rem; transition: background .2s, color .2s; }
 .tile .t { overflow-wrap: anywhere; white-space: pre-wrap; min-width: 0; }
 .tile[disabled] { cursor: default; }
-.tile.sel { outline: 4px solid var(--ink); outline-offset: 2px; }
+.tile.sel { background: var(--accent-soft); border-color: var(--accent); }
+.tile.sel .k { background: var(--accent); color: var(--accent-ink); }
 .tile.sel .k::after { content: "✓"; }
 .tile.sel .k span { display: none; }
+.tile.is-correct, .tile.is-wrong { color: var(--tile-ink); border-color: transparent; box-shadow: 0 3px 0 rgb(0 0 0 / .18); }
+.tile.is-correct .k, .tile.is-wrong .k { background: rgb(255 255 255 / .22); color: var(--tile-ink); }
 .tile.is-correct { background: var(--tile-ok); opacity: 1; }
 .tile.is-wrong { background: var(--tile-bad); }
 .tile.is-dim { opacity: .32; }
@@ -384,7 +388,6 @@ const today = () => new Date().toISOString().slice(0, 10);
 const $main = document.getElementById('main');
 const $nav = document.getElementById('topNav');
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-const TILE_COLORS = ['var(--t1)', 'var(--t2)', 'var(--t3)', 'var(--t4)', 'var(--t5)', 'var(--t6)'];
 
 function h(tag, attrs, ...kids) {
   const el = document.createElement(tag);
@@ -1055,7 +1058,7 @@ function viewPlay() {
       else if (chosenOrig.includes(orig)) cls += ' is-wrong';
       else cls += ' is-dim';
     } else if (it.sel.has(d)) cls += ' sel';
-    return h('button', { type: 'button', class: cls, style: `--tile:${TILE_COLORS[d % TILE_COLORS.length]}`, disabled: graded, 'aria-pressed': graded ? null : String(it.sel.has(d)), onclick: () => choose(d) },
+    return h('button', { type: 'button', class: cls, disabled: graded, 'aria-pressed': graded ? null : String(it.sel.has(d)), onclick: () => choose(d) },
       h('span', { class: 'k' }, h('span', null, LETTERS[d])), optText(it.q.options[orig], 't'));
   }));
 
