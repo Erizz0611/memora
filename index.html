@@ -1,0 +1,1404 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ôn Đề Quiz</title>
+<meta name="description" content="Biến bộ đề trắc nghiệm thành bài quiz kiểu Quizizz: ôn tập, kiểm tra, lưu lịch sử và đồng bộ bằng tài khoản Google.">
+<meta name="theme-color" content="#2D4FD6">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='12' height='12' rx='3' fill='%233456DB'/%3E%3Crect x='17' y='3' width='12' height='12' rx='3' fill='%230B8577'/%3E%3Crect x='3' y='17' width='12' height='12' rx='3' fill='%23B76A00'/%3E%3Crect x='17' y='17' width='12' height='12' rx='3' fill='%23BC2F7A'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+/* Layout: one centered study column; library as cards, play screen as a big question card over a 2-column grid of colored answer tiles. */
+:root {
+  --bg: #EEF1F6; --surface: #FFFFFF; --surface-2: #F5F7FB; --ink: #141B26; --muted: #586377; --line: #D8DEE8;
+  --accent: #2D4FD6; --accent-ink: #FFFFFF; --accent-soft: #E3E9FF;
+  --ok: #13814A; --ok-soft: #DCF2E5; --bad: #C23131; --bad-soft: #FBE4E4; --warn: #8F5B00; --warn-soft: #FFF0D2;
+  --t1: #3456DB; --t2: #0B8577; --t3: #B76A00; --t4: #BC2F7A; --t5: #6A4ED3; --t6: #4C7A1B;
+  --ai: #5B3FC4; --ai-soft: #ECE7FF;
+  --tile-ink: #FFFFFF; --tile-ok: #14834B; --tile-bad: #C73434;
+  --shadow: 0 1px 2px rgb(20 27 38 / .06), 0 6px 20px rgb(20 27 38 / .06);
+  --f-display: "Baloo 2", "Be Vietnam Pro", system-ui, sans-serif;
+  --f-body: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --r: 14px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0E131B; --surface: #161D28; --surface-2: #1B2431; --ink: #E7ECF3; --muted: #9AA5B6; --line: #2A3545;
+  --accent: #809BFF; --accent-ink: #0E131B; --accent-soft: #222E4C;
+  --ai: #B7A6FF; --ai-soft: #2A2350;
+  --ok: #45C882; --ok-soft: #15372A; --bad: #F27171; --bad-soft: #3E1E21; --warn: #F2B653; --warn-soft: #3A2C12;
+  --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 8px 24px rgb(0 0 0 / .25);
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #0E131B; --surface: #161D28; --surface-2: #1B2431; --ink: #E7ECF3; --muted: #9AA5B6; --line: #2A3545;
+  --accent: #809BFF; --accent-ink: #0E131B; --accent-soft: #222E4C;
+  --ai: #B7A6FF; --ai-soft: #2A2350;
+  --ok: #45C882; --ok-soft: #15372A; --bad: #F27171; --bad-soft: #3E1E21; --warn: #F2B653; --warn-soft: #3A2C12;
+  --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 8px 24px rgb(0 0 0 / .25);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 900px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 56px; display: flex; flex-direction: column; gap: 24px; }
+h1, h2, h3 { font-family: var(--f-display); line-height: 1.15; margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+h1 { font-size: 2.1rem; font-weight: 800; }
+h2 { font-size: 1.35rem; font-weight: 700; }
+h3 { font-size: 1.1rem; font-weight: 700; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: .86rem; }
+.num { font-variant-numeric: tabular-nums; }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.between { justify-content: space-between; }
+
+/* Top bar */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; background: none; border: 0; padding: 0; color: var(--ink); cursor: pointer; font: inherit; }
+.mark { width: 36px; height: 36px; border-radius: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 6px; background: var(--surface); box-shadow: var(--shadow); }
+.mark i { border-radius: 3px; display: block; }
+.mark i:nth-child(1) { background: var(--t1); } .mark i:nth-child(2) { background: var(--t2); }
+.mark i:nth-child(3) { background: var(--t3); } .mark i:nth-child(4) { background: var(--t4); }
+.brand b { font-family: var(--f-display); font-size: 1.45rem; font-weight: 800; }
+
+/* Buttons */
+.btn { font: inherit; font-weight: 600; font-size: .92rem; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 8px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; line-height: 1.3; white-space: nowrap; transition: background .15s, border-color .15s, transform .1s; }
+.btn:hover { border-color: var(--muted); }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--muted); }
+.btn.ghost:hover { color: var(--ink); background: var(--surface-2); }
+.btn.danger { color: var(--bad); }
+.btn.armed { background: var(--bad); border-color: var(--bad); color: #fff; }
+.btn.big { font-size: 1.05rem; padding: 12px 22px; border-radius: 12px; }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* Panels */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; }
+.hero { display: flex; flex-direction: column; gap: 14px; padding: 24px; background: var(--surface); border-radius: 18px; box-shadow: var(--shadow); }
+.hero p { max-width: 60ch; }
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; counter-reset: s; }
+.steps li { counter-increment: s; background: var(--surface-2); border-radius: 12px; padding: 14px; display: flex; gap: 10px; font-size: .9rem; min-width: 0; }
+.steps li::before { content: counter(s); font-family: var(--f-display); font-weight: 800; font-size: 1.3rem; line-height: 1; color: var(--accent); }
+@media (max-width: 680px) { .steps { grid-template-columns: 1fr; } }
+
+.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.card h3 { overflow-wrap: anywhere; }
+.card .actions { margin-top: auto; display: flex; flex-wrap: wrap; gap: 6px; padding-top: 4px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: .74rem; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+.chip.accent { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.chip.warn { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+.chip.ok { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+.chip.ai { background: var(--ai-soft); color: var(--ai); border-color: transparent; }
+.meter { height: 6px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--ok); border-radius: inherit; }
+.empty { border: 1.5px dashed var(--line); border-radius: var(--r); padding: 22px; text-align: center; color: var(--muted); display: flex; flex-direction: column; gap: 10px; align-items: center; }
+
+/* Forms */
+label.field { display: flex; flex-direction: column; gap: 6px; font-weight: 600; font-size: .9rem; }
+textarea, input[type="text"], input[type="number"], select { font: inherit; font-weight: 400; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%; }
+textarea { resize: vertical; min-height: 120px; font-size: .88rem; line-height: 1.5; }
+textarea.code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .8rem; min-height: 220px; }
+textarea:focus, input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: transparent; }
+.opt-group { display: flex; flex-wrap: wrap; gap: 6px; }
+.opt-group label { cursor: pointer; }
+.opt-group input { position: absolute; opacity: 0; pointer-events: none; }
+.opt-group span { display: inline-block; padding: 7px 13px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface); font-weight: 600; font-size: .88rem; }
+.opt-group input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.opt-group input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+.switch { display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; font-size: .92rem; }
+.switch input { width: 18px; height: 18px; accent-color: var(--accent); }
+details.prompt { background: var(--surface-2); border-radius: 10px; padding: 10px 14px; }
+details.prompt summary { cursor: pointer; font-weight: 600; font-size: .9rem; }
+details.prompt pre { white-space: pre-wrap; font-size: .8rem; margin: 10px 0 0; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; overflow-wrap: anywhere; }
+
+/* Notices */
+.note { border-radius: 10px; padding: 10px 14px; font-size: .9rem; display: flex; flex-direction: column; gap: 4px; }
+.note.ok { background: var(--ok-soft); color: var(--ok); }
+.note.warn { background: var(--warn-soft); color: var(--warn); }
+.note.bad { background: var(--bad-soft); color: var(--bad); }
+.note.ai { background: var(--ai-soft); color: var(--ai); }
+.note ul { margin: 4px 0 0; padding-left: 18px; color: var(--ink); }
+.note b { font-weight: 700; }
+
+/* Question list */
+.qlist { display: flex; flex-direction: column; gap: 10px; }
+.qitem { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.qitem.flag { border-color: var(--warn); }
+.qitem .qtext { font-weight: 600; overflow-wrap: anywhere; white-space: pre-wrap; min-width: 0; }
+.codeblk { font-family: var(--f-mono); font-size: .86em; font-weight: 500; line-height: 1.55; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin: 6px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.mono { font-family: var(--f-mono); font-size: .92em; }
+.qitem ol { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 3px; }
+.qitem li { display: flex; gap: 8px; font-size: .92rem; overflow-wrap: anywhere; }
+.qitem li .k { font-weight: 700; color: var(--muted); min-width: 1.2em; }
+.qitem li.right { color: var(--ok); font-weight: 600; }
+.qitem li.right .k { color: var(--ok); }
+.qitem li.picked { color: var(--bad); }
+.qitem li.picked .k { color: var(--bad); }
+.qitem .exp { font-size: .86rem; color: var(--muted); border-left: 3px solid var(--line); padding-left: 10px; white-space: pre-wrap; }
+
+/* History */
+.tablewrap { overflow-x: auto; }
+table.runs { width: 100%; border-collapse: collapse; font-size: .88rem; font-variant-numeric: tabular-nums; }
+table.runs th { text-align: left; font-size: .74rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; padding: 6px 10px 6px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.runs td { padding: 8px 10px 8px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.runs tr:last-child td { border-bottom: 0; }
+.spark { display: flex; align-items: flex-end; gap: 4px; height: 72px; padding: 4px 0; border-bottom: 1px dashed var(--line); }
+.spark i { flex: 1 1 0; max-width: 22px; border-radius: 4px 4px 0 0; display: block; }
+
+/* Play layout: question column + summary panel */
+.wrap.wide { max-width: 1180px; }
+.playgrid { display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 20px; align-items: start; }
+.aside { position: sticky; top: calc(12px + env(safe-area-inset-top, 0px)); background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.sumstats { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; }
+.sumstats div { background: var(--surface-2); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; }
+.sumstats b { font-family: var(--f-display); font-size: 1.35rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.sumstats span { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+.qgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 6px; max-height: 46vh; overflow: auto; padding: 4px; margin: -4px; }
+.qn { font: inherit; font-weight: 700; font-size: .85rem; height: 38px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; font-variant-numeric: tabular-nums; }
+.qn:hover { border-color: var(--muted); }
+.qn.ok { background: var(--tile-ok); color: #fff; border-color: transparent; }
+.qn.bad { background: var(--tile-bad); color: #fff; border-color: transparent; }
+.qn.filled { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.qn.cur { outline: 3px solid var(--ink); outline-offset: 1px; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: .78rem; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.navrow { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pill.low { background: var(--bad); color: #fff; border-color: transparent; }
+@media (max-width: 900px) { .playgrid { grid-template-columns: 1fr; } .aside { position: static; } }
+
+/* Play */
+.play { display: flex; flex-direction: column; gap: 16px; }
+.hud { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.hud .stats { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill { background: var(--surface); border: 1px solid var(--line); border-radius: 99px; padding: 5px 12px; font-weight: 700; font-size: .88rem; font-variant-numeric: tabular-nums; }
+.pill.hot { background: var(--t3); color: #fff; border-color: transparent; }
+.progress { height: 8px; border-radius: 99px; background: var(--surface); overflow: hidden; border: 1px solid var(--line); }
+.progress i { display: block; height: 100%; background: var(--accent); transition: width .3s; }
+.qcard { background: var(--surface); border-radius: 18px; box-shadow: var(--shadow); padding: 28px 24px; display: flex; flex-direction: column; gap: 14px; position: relative; overflow: hidden; }
+.qcard .qtext { font-size: clamp(1.15rem, 2.6vw, 1.5rem); font-weight: 600; line-height: 1.45; overflow-wrap: anywhere; white-space: pre-wrap; }
+.qcard .qmeta { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
+.timer { position: absolute; left: 0; top: 0; height: 5px; width: 100%; background: var(--accent); transform-origin: left; }
+.timer.low { background: var(--bad); }
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 560px) { .tiles { grid-template-columns: 1fr; } }
+.tile { --tile: var(--t1); font: inherit; text-align: left; border: 0; border-radius: 14px; background: var(--tile); color: var(--tile-ink); padding: 16px 16px 16px 14px; min-height: 84px; display: flex; gap: 12px; align-items: center; cursor: pointer; font-size: 1.02rem; font-weight: 600; box-shadow: 0 4px 0 rgb(0 0 0 / .18); transition: transform .12s, opacity .2s, box-shadow .12s, background .2s; position: relative; min-width: 0; }
+.tile:hover:not([disabled]) { transform: translateY(-2px); box-shadow: 0 6px 0 rgb(0 0 0 / .18); }
+.tile:active:not([disabled]) { transform: translateY(2px); box-shadow: 0 2px 0 rgb(0 0 0 / .18); }
+.tile .k { flex: none; width: 32px; height: 32px; border-radius: 8px; background: rgb(255 255 255 / .22); display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: 1.05rem; }
+.tile .t { overflow-wrap: anywhere; white-space: pre-wrap; min-width: 0; }
+.tile[disabled] { cursor: default; }
+.tile.sel { outline: 4px solid var(--ink); outline-offset: 2px; }
+.tile.sel .k::after { content: "✓"; }
+.tile.sel .k span { display: none; }
+.tile.is-correct { background: var(--tile-ok); opacity: 1; }
+.tile.is-wrong { background: var(--tile-bad); }
+.tile.is-dim { opacity: .32; }
+.tile.is-correct .k::after { content: "✓"; } .tile.is-correct .k span { display: none; }
+.tile.is-wrong .k::after { content: "✕"; } .tile.is-wrong .k span { display: none; }
+.feedback { border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.feedback.ok { background: var(--ok-soft); }
+.feedback.bad { background: var(--bad-soft); }
+.feedback .fh { font-family: var(--f-display); font-weight: 800; font-size: 1.35rem; line-height: 1.2; }
+.feedback.ok .fh { color: var(--ok); }
+.feedback.bad .fh { color: var(--bad); }
+.feedback .exp { white-space: pre-wrap; font-size: .92rem; }
+.kbd { font-size: .78rem; color: var(--muted); }
+.gain { position: absolute; right: 18px; top: 16px; font-family: var(--f-display); font-weight: 800; font-size: 1.4rem; color: var(--ok); animation: pop .9s ease-out both; }
+@keyframes pop { 0% { transform: translateY(8px) scale(.8); opacity: 0; } 30% { transform: translateY(0) scale(1.1); opacity: 1; } 100% { transform: translateY(-6px) scale(1); opacity: 1; } }
+
+/* Result */
+.score { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.score div { background: var(--surface-2); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.score b { font-family: var(--f-display); font-size: 1.8rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.score span { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+@media (max-width: 600px) { .score { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.bigpct { font-family: var(--f-display); font-weight: 800; font-size: clamp(3rem, 10vw, 4.5rem); line-height: 1; font-variant-numeric: tabular-nums; }
+
+/* Account button */
+.acct { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-weight: 600; font-size: .86rem; cursor: pointer; white-space: nowrap; }
+.acct:hover { border-color: var(--muted); }
+.acct img, .acct .av { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex: none; }
+.acct .av { display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.acct .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: none; }
+.acct .dot.busy { background: var(--warn); }
+.acct .dot.err { background: var(--bad); }
+@media (max-width: 520px) { .acct .acct-l { display: none; } .acct { padding-right: 8px; } }
+
+/* Modal + toast */
+.overlay { position: fixed; inset: 0; background: rgb(8 12 18 / .55); display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); z-index: 50; }
+.modal { background: var(--surface); border-radius: 16px; padding: 20px; width: min(640px, 100%); max-height: 100%; overflow: auto; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow); }
+.err { color: var(--bad); font-size: .88rem; font-weight: 600; }
+#toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%) translateY(20px); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-weight: 600; font-size: .9rem; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 60; width: max-content; max-width: calc(100% - 32px); text-align: center; }
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <button class="brand" id="brandBtn" type="button" aria-label="Về thư viện">
+      <span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <b>Ôn Đề</b>
+    </button>
+    <nav class="row" id="topNav"></nav>
+  </header>
+  <main id="main"></main>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- Prompt template for the AI ---------- */
+const PROMPT = `Đọc file đề đính kèm và chuyển TOÀN BỘ câu hỏi trắc nghiệm sang JSON theo đúng cấu trúc sau, không thêm chữ nào ngoài JSON:
+
+{
+  "title": "<tên bộ đề>",
+  "questions": [
+    {
+      "question": "<nội dung câu hỏi, bỏ phần 'Câu 1:'>",
+      "options": ["<lựa chọn A>", "<lựa chọn B>", "..."],
+      "answer": ["<chữ cái đáp án đúng, ví dụ B>"],
+      "aiAnswer": false,
+      "explanation": "<giải thích>"
+    }
+  ]
+}
+
+Quy tắc chung:
+1. Giữ nguyên nội dung câu hỏi và các lựa chọn, không sửa, không tóm tắt.
+2. Bỏ ký hiệu "A.", "B." ở đầu mỗi lựa chọn.
+3. Câu có nhiều đáp án đúng thì ghi đủ, ví dụ "answer": ["A", "C"].
+4. Giữ đúng thứ tự câu như trong đề.
+
+Về đáp án:
+5. Nếu đề CÓ đáp án cho câu đó (khoanh, in đậm, gạch chân, tô màu, bảng đáp án cuối đề…): dùng đúng đáp án của đề và ghi "aiAnswer": false. Phần "explanation" chép lời giải của đề nếu có, không có thì để rỗng.
+6. Nếu đề KHÔNG có đáp án cho câu đó: tự giải để chọn đáp án đúng nhất, ghi "aiAnswer": true, và viết "explanation" ngắn gọn (1–3 câu) nói vì sao chọn đáp án đó.
+7. Nếu tự giải mà không chắc chắn, vẫn chọn đáp án hợp lý nhất nhưng mở đầu phần giải thích bằng "[Không chắc chắn]".
+8. Không bao giờ đổi đáp án mà đề đã cho. Nếu thấy đáp án của đề có vẻ sai, giữ nguyên và mở đầu phần giải thích bằng "[Nghi đề sai]" kèm lý do.
+
+Định dạng chữ:
+9. Viết mọi thứ dưới dạng văn bản thường: KHÔNG dùng LaTeX, không bao bằng dấu $, không dùng ^{ }, \\%, \\frac… Code giữ đúng ký tự và xuống dòng như trong đề (ví dụ: one = 7*3%4;).
+10. Nếu đề là bản quét và có lỗi nhận dạng chữ rõ ràng (ví dụ "(11)" thay cho "(II)", "0" thay cho "O"), hãy sửa lại cho đúng.
+
+Phạm vi và độ dài:
+11. Mặc định phải làm TẤT CẢ các câu có trong đề, không bỏ câu nào. Chỉ khi tôi ghi rõ phạm vi (ví dụ "chỉ làm câu 1–50") thì mới làm đúng phần đó, và vẫn phải làm hết phần đó.
+12. Nếu không thể viết hết trong một lần trả lời vì quá dài: dừng ở câu trọn vẹn cuối cùng (không cắt giữa câu), vẫn đóng JSON đúng cú pháp, rồi ghi thêm một dòng "Còn tiếp: đã làm đến câu N". Khi tôi nhắn "Làm tiếp", tiếp tục từ câu N+1 với đúng quy tắc trên.
+13. Ngoài khối JSON, ghi một dòng: "Tổng: X câu, trong đó Y câu tự giải" (X là số câu có trong lần trả lời này).`;
+
+/* ---------- Example set (shown until the user deletes it) ---------- */
+const SAMPLE = {
+  id: 'mau-kien-thuc-chung', sample: true, title: 'Bộ đề mẫu – Kiến thức chung', createdAt: 0, updatedAt: 0,
+  questions: [
+    { question: 'Thủ đô của Việt Nam là thành phố nào?', options: ['Huế', 'Hà Nội', 'Đà Nẵng', 'TP. Hồ Chí Minh'], answer: ['B'], explanation: 'Hà Nội là thủ đô của nước Việt Nam thống nhất từ năm 1976.' },
+    { question: 'Chiến thắng Điện Biên Phủ diễn ra vào năm nào?', options: ['1945', '1954', '1968', '1975'], answer: ['B'], explanation: 'Chiến dịch kết thúc thắng lợi ngày 7/5/1954.' },
+    { question: 'Những số nào sau đây là số nguyên tố?', options: ['2', '9', '11', '15'], answer: ['A', 'C'], explanation: '9 = 3 × 3 và 15 = 3 × 5 nên không phải số nguyên tố.' },
+    { question: 'Đỉnh núi cao nhất Việt Nam là?', options: ['Pu Si Lung', 'Fansipan', 'Ngọc Linh', 'Bạch Mã'], answer: ['B'], explanation: 'Fansipan cao 3.143 m, thuộc dãy Hoàng Liên Sơn.' },
+    { question: 'Ở áp suất 1 atm, nước tinh khiết sôi ở bao nhiêu độ C?', options: ['90 °C', '100 °C', '110 °C', '120 °C'], answer: ['B'], explanation: '' },
+    { question: 'Đoạn sông Mê Kông chảy qua Việt Nam thường được gọi là gì?', options: ['Sông Vàm Cỏ', 'Sông Cửu Long', 'Sông Đồng Nai', 'Sông Bé'], answer: ['B'], explanation: 'Sông Mê Kông khi vào Việt Nam chia thành sông Tiền và sông Hậu, gọi chung là sông Cửu Long.' }
+  ]
+};
+
+/* ---------- Local storage (this browser only) ---------- */
+const LS_KEY = 'onde-quiz.v1';
+function loadState() {
+  try { const s = JSON.parse(localStorage.getItem(LS_KEY)); if (s && Array.isArray(s.sets)) return s; } catch (e) {}
+  return null;
+}
+const state = loadState() || { sets: [structuredClone(SAMPLE)], history: {}, settings: {} };
+state.history = state.history || {};
+state.deleted = state.deleted || {};
+state.pendingClean = true;
+state.settings = Object.assign({ mode: 'practice', shuffleQ: true, shuffleO: false, timer: 30, count: 0 }, state.settings || {});
+// storageOk turns false when the browser refuses to save (private mode, full or blocked storage).
+let storageOk = true;
+try { localStorage.setItem(LS_KEY + '.probe', '1'); localStorage.removeItem(LS_KEY + '.probe'); } catch (e) { storageOk = false; }
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {}
+function save() { const ok = saveLocal(); scheduleSync(); return ok; }
+function saveLocal() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); storageOk = true; return true; }
+  catch (e) {
+    storageOk = false;
+    toast('Không lưu được vào trình duyệt (bộ nhớ đầy hoặc bị chặn). Hãy tải bản sao lưu ngay để không mất dữ liệu.', 6000, true);
+    return false;
+  }
+}
+
+/* ---------- Saving files (downloads capability, lights up when available) ---------- */
+let downloads = null;
+(async () => {
+  try { downloads = window.claude && window.claude.use ? await window.claude.use('downloads') : null; } catch (e) { downloads = null; }
+  if (downloads) refreshIf(['home', 'detail']); // outside claude.ai this runs before the router exists, so only refresh when there is something new
+})();
+async function saveFile(filename, text, fallbackMsg) {
+  if (downloads) {
+    try { await downloads.save({ filename, data: text }); toast('Đã lưu file ' + filename); return; }
+    catch (e) { if (e && e.code === 'declined') return; }
+  }
+  if (!window.claude) {
+    try {
+      const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+      const a = h('a', { href: url, download: filename, style: 'display:none' });
+      document.body.append(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      toast('Đã tải file ' + filename);
+      return;
+    } catch (e) {}
+  }
+  copyText(text, fallbackMsg);
+}
+function slug(s) {
+  return String(s || 'bo-de').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D')
+    .replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase().slice(0, 60) || 'bo-de';
+}
+const canDownload = () => !!downloads || !window.claude;
+const today = () => new Date().toISOString().slice(0, 10);
+
+/* ---------- Helpers ---------- */
+const $main = document.getElementById('main');
+const $nav = document.getElementById('topNav');
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const TILE_COLORS = ['var(--t1)', 'var(--t2)', 'var(--t3)', 'var(--t4)', 'var(--t5)', 'var(--t6)'];
+
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === 'class') el.className = v;
+    else if (k === 'style') el.setAttribute('style', v);
+    else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v);
+    else if (k === 'value') el.value = v;
+    else if (k === 'checked') el.checked = !!v;
+    else el.setAttribute(k, v === true ? '' : v);
+  }
+  for (const k of kids.flat(Infinity)) { if (k == null || k === false) continue; el.append(k instanceof Node ? k : String(k)); }
+  return el;
+}
+const btn = (label, onclick, cls = '') => h('button', { type: 'button', class: 'btn ' + cls, onclick }, label);
+function confirmBtn(label, armedLabel, onConfirm, cls = '') {
+  const b = h('button', { type: 'button', class: 'btn ' + cls }, label);
+  let armed = false, t;
+  b.addEventListener('click', () => {
+    if (!armed) { armed = true; b.textContent = armedLabel; b.classList.add('armed'); t = setTimeout(() => { armed = false; b.textContent = label; b.classList.remove('armed'); }, 3000); return; }
+    clearTimeout(t); onConfirm();
+  });
+  return b;
+}
+let toastT, toastLock = 0;
+function toast(msg, ms = 2600, urgent = false) {
+  if (!urgent && Date.now() < toastLock) return;
+  if (urgent) toastLock = Date.now() + ms;
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), ms); }
+function uid() { return 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const playable = q => q && q.question && q.options.length >= 2 && q.answer.length > 0;
+const letterIdx = L => LETTERS.indexOf(L);
+function fmtTime(ms) { const s = Math.round(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+
+function copyText(text, okMsg) {
+  try {
+    navigator.clipboard.writeText(text).then(() => toast(okMsg || 'Đã sao chép'), () => manualCopy(text));
+  } catch (e) { manualCopy(text); }
+}
+function manualCopy(text) {
+  const ta = h('textarea', { class: 'code', readonly: true }, text);
+  const close = openModal(h('h2', null, 'Sao chép thủ công'), h('p', { class: 'muted small' }, 'Trình duyệt không cho sao chép tự động. Bấm vào ô dưới, chọn hết (Ctrl+A) rồi sao chép (Ctrl+C).'), ta, h('div', { class: 'row' }, btn('Đóng', () => close())));
+  setTimeout(() => { ta.focus(); ta.select(); }, 50);
+}
+function openModal(...content) {
+  const modal = h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true' }, ...content);
+  const ov = h('div', { class: 'overlay' }, modal);
+  const close = () => { ov.remove(); document.removeEventListener('keydown', onKey, true); };
+  const onKey = e => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
+  ov.addEventListener('mousedown', e => { if (e.target === ov) close(); });
+  document.addEventListener('keydown', onKey, true);
+  document.body.append(ov);
+  return close;
+}
+
+/* ---------- Text cleanup and code display ---------- */
+// AI often writes code and formulas as LaTeX ($one=7^{*}3\%4$). Turn the simple cases back into plain text.
+function cleanLatex(input) {
+  let s = String(input ?? '');
+  if (!/[$\\]|\^\{|_\{/.test(s)) return s;
+  const inner = t => t
+    .replace(/\\(?:text|mathrm|mathbf|mathit|texttt|operatorname)\{([^{}]*)\}/g, '$1')
+    .replace(/\\frac\{([^{}]*)\}\{([^{}]*)\}/g, '($1)/($2)')
+    .replace(/\\sqrt\{([^{}]*)\}/g, '√($1)')
+    .replace(/\\left|\\right/g, '')
+    .replace(/\^\{\s*\*\s*\}/g, '*')
+    .replace(/\^\{([^{}]*)\}/g, '^$1')
+    .replace(/_\{([^{}]*)\}/g, '_$1')
+    .replace(/\\times\b/g, '×').replace(/\\cdot\b/g, '·').replace(/\\div\b/g, '÷')
+    .replace(/\\(?:leq|le)\b/g, '≤').replace(/\\(?:geq|ge)\b/g, '≥').replace(/\\(?:neq|ne)\b/g, '≠')
+    .replace(/\\(?:ldots|cdots|dots)\b/g, '…').replace(/\\pi\b/g, 'π').replace(/\\infty\b/g, '∞')
+    .replace(/\\rightarrow\b|\\to\b/g, '→').replace(/\\Rightarrow\b/g, '⇒')
+    .replace(/\\([%_&#{}$])/g, '$1')
+    .replace(/\\[,;! ]/g, ' ');
+  s = s.replace(/\$\$([\s\S]+?)\$\$/g, (_, t) => inner(t));
+  s = s.replace(/\\\((.+?)\\\)/g, (_, t) => inner(t)).replace(/\\\[([\s\S]+?)\\\]/g, (_, t) => inner(t));
+  // A $…$ pair only counts as math when it hugs its content, so PHP/shell variables like "$a = 5; $b" stay untouched.
+  s = s.replace(/(^|[\s(\[:,;=])\$(?!\s)([^$\n]+?)(?<!\s)\$(?=$|[\s.,;:)\]!?])/gm, (_, pre, t) => pre + inner(t));
+  return s.replace(/\^\{\s*\*\s*\}/g, '*').replace(/\\([%_&#])/g, '$1');
+}
+function cleanQuestion(q) {
+  return Object.assign({}, q, { question: cleanLatex(q.question), options: q.options.map(cleanLatex), explanation: cleanLatex(q.explanation || '') });
+}
+
+const VI_CHARS = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
+const CODE_START = /^\s*(#include|#define|using\s|import\s|from\s+\S+\s+import|package\s|public\s|private\s|protected\s|static\s|class\s|struct\s|int\s|long\s|short\s|unsigned\s|double\s|float\s|char\s|bool\s|boolean\s|void\s|string\s|String\s|var\s|let\s|const\s|def\s|return\b|for\s*\(|while\s*\(|if\s*\(|else\b|switch\s*\(|case\s|break;|continue;|printf|scanf|cout|cin|System\.|console\.|print\()/;
+// Guess whether one line is source code. Vietnamese prose never is.
+function isCode(line) {
+  const t = String(line).trim();
+  if (!t || t.length > 160 || VI_CHARS.test(t)) return false;
+  if (/[.?!:]$/.test(t) && t.split(/\s+/).length > 6) return false;
+  if (CODE_START.test(line)) return true;
+  if (/[;{}]$/.test(t)) return true;
+  if (/^\s{2,}\S/.test(line) && /[=();<>\[\]]/.test(t)) return true;
+  return /^[A-Za-z_][\w.\[\]]*\s*(=(?!=)|\+=|-=|\*=|\/=|%=|\+\+|--)/.test(t);
+}
+// Render text line by line; runs of code lines become one monospace block.
+function richText(text, cls, prefix) {
+  const box = h('div', { class: cls });
+  let block = null, first = true;
+  for (const line of String(text ?? '').split('\n')) {
+    if (isCode(line)) {
+      if (first && prefix) box.append(h('div', null, prefix));
+      if (!block) { block = h('pre', { class: 'codeblk' }); box.append(block); }
+      block.textContent += (block.textContent ? '\n' : '') + line;
+    } else {
+      block = null;
+      box.append(h('div', { class: 'tl' }, first && prefix ? prefix : null, line || ' '));
+    }
+    first = false;
+  }
+  return box;
+}
+const optText = (o, cls) => h('span', { class: (cls ? cls + ' ' : '') + (isCode(o) ? 'mono' : '') }, o);
+
+/* ---------- Parsing what the AI returns ---------- */
+function extractJson(text) {
+  let t = String(text || '').trim();
+  if (!t) throw new Error('Ô nhập đang trống. Hãy dán nội dung AI trả về hoặc chọn file .json.');
+  const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) t = fence[1].trim();
+  const start = t.search(/[\[{]/);
+  if (start < 0) throw new Error('Không tìm thấy dữ liệu JSON. Kiểm tra lại xem đã dán đúng phần AI trả về chưa.');
+  const close = t[start] === '{' ? '}' : ']';
+  const end = t.lastIndexOf(close);
+  if (end <= start) throw new Error('Dữ liệu bị cắt giữa chừng (thiếu dấu đóng ngoặc). Thường do đề quá dài: hãy nhờ AI làm từng phần, ví dụ câu 1–50, rồi dán lần lượt.');
+  const body = t.slice(start, end + 1);
+  try { return JSON.parse(body); } catch (e1) {
+    try { return JSON.parse(body.replace(/,\s*([}\]])/g, '$1')); } catch (e2) {
+      throw new Error('JSON bị lỗi cú pháp nên không đọc được. Thường do AI trả lời bị cắt hoặc chèn chữ vào giữa. Hãy yêu cầu AI xuất lại, hoặc chia đề thành nhiều phần nhỏ hơn.');
+    }
+  }
+}
+function normAnswer(a, n) {
+  if (a == null || a === '') return { letters: [], bad: [] };
+  let arr = Array.isArray(a) ? a : (typeof a === 'number' ? [a] : String(a).replace(/đáp\s*án\s*(đúng)?\s*[:：]?/ig, ' ').split(/[,;/\s]+/));
+  arr = arr.filter(x => !/^(và|and|&)$/i.test(String(x).trim()));
+  const zeroBased = arr.some(x => x === 0 || x === '0');
+  const out = new Set(), bad = [];
+  for (const x of arr) {
+    if (x == null || x === '') continue;
+    let idx = -1;
+    if (typeof x === 'number' || /^\s*\d+\s*$/.test(String(x))) { const v = Number(x); idx = zeroBased ? v : v - 1; }
+    else { const s = String(x).trim().toUpperCase().replace(/^ĐÁP ÁN\s*/, '').replace(/[^A-Z]/g, ''); if (!s) continue; if (s.length === 1) idx = letterIdx(s); else { bad.push(String(x)); continue; } }
+    if (idx >= 0 && idx < n) out.add(LETTERS[idx]); else bad.push(String(x));
+  }
+  return { letters: [...out].sort(), bad };
+}
+function normQuestionRaw(q) {
+  if (q == null || typeof q !== 'object') return { q: null, problems: ['không đúng định dạng'] };
+  let text = String(q.question ?? q.cauHoi ?? q.q ?? q.text ?? '').trim().replace(/^\s*(câu|cau|question|q)\s*\d+\s*[:.)\-–]\s*/i, '');
+  let opts = q.options ?? q.choices ?? q.answers_list ?? q.luaChon ?? [];
+  if (opts && !Array.isArray(opts) && typeof opts === 'object') opts = Object.keys(opts).sort().map(k => opts[k]);
+  if (!Array.isArray(opts)) opts = [];
+  opts = opts.map(o => String(o ?? '').trim()).filter(o => o !== '');
+  if (opts.length && opts.every((o, j) => new RegExp('^' + LETTERS[j] + '\\s*[.):]\\s*', 'i').test(o))) opts = opts.map(o => o.replace(/^[A-Za-z]\s*[.):]\s*/, ''));
+  const ans = normAnswer(q.answer ?? q.answers ?? q.correct ?? q.dapAn, opts.length);
+  const problems = [];
+  if (!text) problems.push('thiếu nội dung câu hỏi');
+  if (opts.length < 2) problems.push('ít hơn 2 lựa chọn');
+  return {
+    q: Object.assign({ question: text, options: opts, answer: ans.letters, explanation: String(q.explanation ?? q.giaiThich ?? q.explain ?? '').trim() },
+      (q.aiAnswer === true || q.aiAnswer === 'true') && ans.letters.length ? { aiAnswer: true } : {}),
+    problems, badAnswer: ans.bad, noAnswer: ans.letters.length === 0
+  };
+}
+function normQuestionClean(q) {
+  const r = normQuestionRaw(q);
+  if (r.q) r.q = cleanQuestion(r.q);
+  return r;
+}
+function parseImport(text) {
+  const raw = extractJson(text);
+  if (raw && !Array.isArray(raw) && Array.isArray(raw.sets)) throw new Error('Đây là file sao lưu toàn bộ dữ liệu, không phải một bộ đề. Hãy dùng nút "Khôi phục" ở cuối trang Thư viện.');
+  const list =Array.isArray(raw) ? raw : (raw.questions || raw.cauHoi || raw.items || raw.data);
+  if (!Array.isArray(list)) throw new Error('Không thấy danh sách "questions" trong dữ liệu. Hãy dùng đúng prompt mẫu.');
+  const questions = [], skipped = [], noAnswer = [], badAnswer = [], aiSolved = [], unsure = [], suspect = [];
+  list.forEach((item, i) => {
+    const r = normQuestionClean(item);
+    const n = i + 1;
+    if (r.problems.length) { skipped.push(`Câu ${n}: ${r.problems.join(', ')}`); return; }
+    if (r.badAnswer.length) badAnswer.push(`Câu ${n}: đáp án "${r.badAnswer.join(', ')}" không khớp lựa chọn nào`);
+    else if (r.noAnswer) noAnswer.push(n);
+    questions.push(r.q);
+    if (r.q.aiAnswer) aiSolved.push(n);
+    if (/^\s*\[không chắc chắn\]/i.test(r.q.explanation)) unsure.push(n);
+    if (/^\s*\[nghi đề sai\]/i.test(r.q.explanation)) suspect.push(n);
+  });
+  const m = String(text).match(/T[ổo]ng\s*(?:cộng)?\s*[:：]?\s*(\d+)\s*c[âa]u/i);
+  const more = String(text).match(/C[òo]n\s*ti[ếe]p[^0-9]{0,40}(\d+)/i);
+  return { more: more ? Number(more[1]) : null, title: (!Array.isArray(raw) && raw.title) ? String(raw.title).trim() : '', questions, skipped, noAnswer, badAnswer, aiSolved, unsure, suspect, total: m ? Number(m[1]) : null, rawCount: list.length };
+}
+
+/* ---------- Data access ---------- */
+function getSet(ref) { return state.sets.find(s => s.id === ref.id); }
+function persist(ref, set) { set.updatedAt = Date.now(); save(); }
+const setJson = set => JSON.stringify({ title: set.title, questions: set.questions }, null, 2);
+function downloadSet(set) { saveFile(slug(set.title) + '.json', setJson(set), 'Đã sao chép dữ liệu bộ đề. Gửi cho bạn bè để họ dán vào "Thêm bộ đề".'); }
+
+/* ---------- Backup and restore of everything on this browser ---------- */
+function backupText() { return JSON.stringify({ app: 'onde-quiz', version: 1, exportedAt: new Date().toISOString(), sets: state.sets, history: state.history }, null, 1); }
+function downloadBackup() { saveFile('on-de-sao-luu-' + today() + '.json', backupText(), 'Đã sao chép bản sao lưu. Dán vào một file ghi chú và cất đi.'); }
+function restoreBackup(text) {
+  const raw = extractJson(text);
+  if (!raw || !Array.isArray(raw.sets)) throw new Error('Đây không phải file sao lưu của Ôn Đề. Nếu là một bộ đề, hãy dùng "Thêm bộ đề".');
+  let added = 0, updated = 0;
+  for (const s of raw.sets) {
+    if (!s || !s.id || !Array.isArray(s.questions)) continue;
+    const questions = s.questions.map(q => normQuestionClean(q)).filter(r => !r.problems.length).map(r => r.q);
+    const incoming = { id: String(s.id), title: String(s.title || 'Bộ đề chưa đặt tên'), questions, createdAt: s.createdAt || Date.now(), updatedAt: s.updatedAt || Date.now(), sample: !!s.sample };
+    const i = state.sets.findIndex(x => x.id === incoming.id);
+    if (i < 0) { incoming.updatedAt = Date.now(); delete state.deleted[incoming.id]; state.sets.push(incoming); added++; }
+    else if ((incoming.updatedAt || 0) >= (state.sets[i].updatedAt || 0)) { state.sets[i] = incoming; updated++; }
+  }
+  for (const [id, hIn] of Object.entries(raw.history || {})) {
+    if (!hIn || typeof hIn !== 'object') continue;
+    const cur = state.history[id] || { best: 0, attempts: 0, runs: [] };
+    const runs = [...(cur.runs || []), ...(Array.isArray(hIn.runs) ? hIn.runs : [])];
+    const seen = new Set();
+    cur.runs = runs.filter(r => r && !seen.has(r.at) && seen.add(r.at)).sort((a, b) => b.at - a.at).slice(0, 30);
+    cur.best = Math.max(cur.best || 0, Number(hIn.best) || 0);
+    cur.attempts = Math.max(cur.attempts || 0, Number(hIn.attempts) || 0);
+    state.history[id] = cur;
+  }
+  save();
+  return { added, updated };
+}
+function openRestore() {
+  const ta = h('textarea', { id: 'restoreText', class: 'code', placeholder: 'Dán nội dung file sao lưu vào đây, hoặc chọn file bên dưới…', spellcheck: 'false' });
+  const file = h('input', { type: 'file', id: 'restoreFile', accept: '.json,.txt,application/json,text/plain', style: 'max-width:100%' });
+  const err = h('p', { class: 'err' });
+  const run = text => {
+    try { const r = restoreBackup(text); close(); toast(`Đã khôi phục: thêm ${r.added} bộ đề, cập nhật ${r.updated} bộ đề.`, 4000); refresh(); }
+    catch (e) { err.textContent = e.message; }
+  };
+  file.addEventListener('change', () => {
+    const f = file.files && file.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => run(String(rd.result || ''));
+    rd.onerror = () => { err.textContent = 'Không đọc được file này.'; };
+    rd.readAsText(f, 'utf-8');
+  });
+  const close = openModal(
+    h('h2', null, 'Khôi phục dữ liệu'),
+    h('p', { class: 'muted small' }, 'Bộ đề trong bản sao lưu sẽ được thêm vào máy này. Bộ đề đã có sẵn chỉ bị thay nếu bản sao lưu mới hơn. Lịch sử làm bài được gộp lại, không mất gì.'),
+    ta, file, err,
+    h('div', { class: 'row' }, btn('Khôi phục', () => run(ta.value), 'primary'), btn('Hủy', () => close(), 'ghost')));
+}
+
+/* ---------- Router ---------- */
+let view = { name: 'home' };
+function go(name, params = {}) { stopTimer(); view = Object.assign({ name }, params); render(true); }
+function refresh() { render(false); }
+function renderNav() {
+  $nav.replaceChildren();
+  if (view.name === 'play') return;
+  if (cloud.status === 'in') $nav.append(accountChip());
+  else if (cloud.status === 'out') $nav.append(btn('Đăng nhập Google', signIn, 'ghost'));
+  if (view.name !== 'home') $nav.append(btn('Thư viện', () => go('home'), 'ghost'));
+  if (view.name !== 'import') $nav.append(btn('+ Thêm bộ đề', () => go('import'), 'primary'));
+}
+function updateChrome() { renderNav(); if (view.name === 'home') refresh(); }
+function refreshIf(names) { if (names.includes(view.name)) refresh(); }
+function render(scrollTop) {
+  const views = { home: viewHome, import: viewImport, detail: viewDetail, setup: viewSetup, play: viewPlay, result: viewResult };
+  renderNav();
+  document.querySelector('.wrap').classList.toggle('wide', view.name === 'play');
+  $main.replaceChildren(views[view.name]());
+  if (scrollTop) window.scrollTo(0, 0);
+}
+document.getElementById('brandBtn').addEventListener('click', () => { if (view.name !== 'play') go('home'); });
+
+/* ---------- Home ---------- */
+function setCard(set) {
+  const ref = { source: 'local', id: set.id };
+  const hist = state.history[set.id];
+  const total = set.questions.length;
+  const missing = set.questions.filter(q => !q.answer.length).length;
+  const aiCount = set.questions.filter(q => q.aiAnswer).length;
+  const chips = h('div', { class: 'chips' },
+    set.sample && h('span', { class: 'chip' }, 'Mẫu'),
+    missing > 0 && h('span', { class: 'chip warn' }, missing + ' câu thiếu đáp án'),
+    aiCount > 0 && h('span', { class: 'chip ai' }, aiCount + ' câu AI giải'));
+  const done = hist && hist.attempts;
+  return h('article', { class: 'card' },
+    chips.childElementCount ? chips : null,
+    h('h3', null, set.title || 'Bộ đề chưa đặt tên'),
+    h('p', { class: 'muted small num' }, total + ' câu' + (done ? ` · Cao nhất ${hist.best}% · ${hist.attempts} lần làm` : ' · Chưa làm lần nào')),
+    done ? h('div', { class: 'meter', 'aria-hidden': 'true' }, h('i', { style: `width:${hist.best}%` })) : null,
+    h('div', { class: 'actions' },
+      btn('Làm bài', () => go('setup', { ref }), 'primary'),
+      btn('Xem & lịch sử', () => go('detail', { ref })),
+      btn(canDownload() ? 'Tải file đề' : 'Sao chép JSON', () => downloadSet(set)),
+      confirmBtn('Xóa', 'Bấm lần nữa để xóa', () => { state.sets = state.sets.filter(s => s.id !== set.id); delete state.history[set.id]; state.deleted[set.id] = Date.now(); save(); toast('Đã xóa bộ đề'); refresh(); }, 'ghost danger')));
+}
+function viewHome() {
+  const hero = h('section', { class: 'hero' },
+    h('h1', null, 'Biến bộ đề thành bài quiz'),
+    h('p', { class: 'muted' }, 'Nhờ AI chuyển file đề sang dữ liệu theo prompt mẫu, dán vào đây và ôn như Quizizz: có giờ, tính điểm, xem lại câu sai.'),
+    h('ol', { class: 'steps' },
+      h('li', null, h('span', null, 'Sao chép prompt mẫu, gửi kèm file đề cho AI (ChatGPT, Claude, Gemini…).')),
+      h('li', null, h('span', null, 'Dán kết quả AI trả về vào "Thêm bộ đề", kiểm tra rồi lưu.')),
+      h('li', null, h('span', null, 'Làm bài, xem lại câu sai, bấm "Làm lại câu sai" đến khi thuộc.'))),
+    h('div', { class: 'row' }, btn('+ Thêm bộ đề', () => go('import'), 'primary big'), btn('Sao chép prompt cho AI', () => copyText(PROMPT, 'Đã sao chép prompt. Dán vào AI cùng file đề.'), 'big')));
+
+  const parts = [];
+  if (!storageOk) parts.push(h('div', { class: 'note bad' },
+    h('b', null, 'Trình duyệt này đang không cho lưu dữ liệu'),
+    h('span', null, 'Có thể bạn đang ở chế độ ẩn danh, hoặc bộ nhớ đã đầy. Bộ đề và lịch sử sẽ mất khi đóng trang. Hãy tải bản sao lưu ở cuối trang, hoặc mở lại bằng cửa sổ thường.')));
+  parts.push(hero);
+  if (cloud.status === 'out') parts.push(h('div', { class: 'note ai' },
+    h('b', null, 'Đăng nhập để không mất bộ đề khi đổi máy'),
+    h('span', null, 'Đăng nhập bằng tài khoản Google, bộ đề và lịch sử làm bài sẽ được lưu lên mạng. Máy khác chỉ cần đăng nhập cùng tài khoản là thấy.'),
+    h('div', { class: 'row', style: 'margin-top:6px' }, btn('Đăng nhập Google', signIn, 'primary'))));
+  parts.push(h('section', { class: 'stack' },
+    h('div', { class: 'sec-head' }, h('h2', null, 'Bộ đề của bạn'), h('span', { class: 'muted small' }, cloud.status === 'in' ? 'Đồng bộ với ' + cloud.user.email : 'Lưu riêng trên trình duyệt của máy này')),
+    state.sets.length
+      ? h('div', { class: 'grid' }, state.sets.map(setCard))
+      : h('div', { class: 'empty' }, h('p', null, 'Chưa có bộ đề nào trên máy này.'), btn('+ Thêm bộ đề đầu tiên', () => go('import'), 'primary'))));
+  parts.push(h('section', { class: 'panel stack' },
+    h('h2', null, 'Sao lưu dữ liệu'),
+    h('p', { class: 'muted small' }, cloud.status === 'in' ? 'Dữ liệu đã được lưu lên mạng theo tài khoản của bạn. Bản sao lưu dạng file vẫn hữu ích nếu muốn cất riêng hoặc chuyển cho tài khoản khác.' : 'Khi chưa đăng nhập, bộ đề và lịch sử làm bài chỉ nằm trên trình duyệt này. Xóa dữ liệu trình duyệt hoặc đổi máy là mất, nên hãy đăng nhập hoặc thỉnh thoảng tải bản sao lưu.'),
+    h('div', { class: 'row' },
+      btn(canDownload() ? 'Tải bản sao lưu' : 'Sao chép bản sao lưu', downloadBackup, 'primary'),
+      btn('Khôi phục', openRestore)),
+    h('p', { class: 'muted small' }, 'Gửi đề cho bạn bè: bấm "' + (canDownload() ? 'Tải file đề' : 'Sao chép JSON') + '" trên bộ đề rồi gửi qua Zalo/Messenger. Bạn bè vào "Thêm bộ đề" và chọn file hoặc dán vào là dùng được.')));
+  return h('div', { class: 'stack', style: 'gap:28px' }, parts);
+}
+
+/* ---------- Import ---------- */
+let importDraft = { text: '', result: null, error: '' };
+function viewImport() {
+  const ta = h('textarea', { id: 'importText', class: 'code', placeholder: 'Dán toàn bộ câu trả lời của AI vào đây (có thể dán cả phần chữ thừa, app tự lọc)…', spellcheck: 'false' });
+  ta.value = importDraft.text;
+  ta.addEventListener('input', () => { importDraft.text = ta.value; });
+  const file = h('input', { type: 'file', id: 'importFile', accept: '.json,.txt,application/json,text/plain', style: 'max-width:100%' });
+  file.addEventListener('change', () => {
+    const f = file.files && file.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => { importDraft.text = String(r.result || ''); check(); };
+    r.onerror = () => toast('Không đọc được file này.');
+    r.readAsText(f, 'utf-8');
+  });
+  function check() {
+    try { importDraft.result = parseImport(importDraft.text); importDraft.error = ''; }
+    catch (e) { importDraft.result = null; importDraft.error = e.message; }
+    refresh();
+    setTimeout(() => { const r = document.getElementById('importResult'); if (r) r.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 30);
+  }
+  const input = h('section', { class: 'panel stack' },
+    h('h2', null, 'Thêm bộ đề'),
+    h('div', { class: 'stack', style: 'gap:8px' },
+      h('p', null, h('b', null, 'Bước 1. '), 'Sao chép prompt, gửi cho AI cùng file đề.'),
+      h('div', { class: 'row' }, btn('Sao chép prompt', () => copyText(PROMPT, 'Đã sao chép prompt'), 'primary')),
+      h('details', { class: 'prompt' }, h('summary', null, 'Xem nội dung prompt'), h('pre', null, PROMPT))),
+    h('div', { class: 'stack', style: 'gap:8px' },
+      h('p', null, h('b', null, 'Bước 2. '), 'Dán kết quả AI trả về, hoặc chọn file .json.'),
+      ta,
+      h('div', { class: 'row between' }, file, btn('Kiểm tra dữ liệu', check, 'primary'))));
+
+  const parts = [input];
+  if (importDraft.error) parts.push(h('div', { id: 'importResult', class: 'note bad' }, h('b', null, 'Chưa đọc được dữ liệu'), h('span', null, importDraft.error)));
+  if (importDraft.result) parts.push(importResultPanel(importDraft.result));
+  return h('div', { class: 'stack', style: 'gap:20px' }, parts);
+}
+function importResultPanel(r) {
+  const n = r.questions.length;
+  const notes = [];
+  if (r.total != null) {
+    notes.push(r.total === r.rawCount
+      ? h('div', { class: 'note ok' }, h('b', null, `Khớp số câu: AI báo ${r.total} câu, app đọc được ${r.rawCount} câu.`))
+      : h('div', { class: 'note warn' }, h('b', null, `Lệch số câu: AI báo ${r.total} câu nhưng dữ liệu có ${r.rawCount} câu.`), h('span', null, 'AI có thể đã bỏ sót hoặc dừng giữa chừng. Hãy so lại với đề.')));
+  }
+  if (r.skipped.length) notes.push(h('div', { class: 'note bad' }, h('b', null, `Bỏ qua ${r.skipped.length} câu không đọc được`), h('ul', null, r.skipped.slice(0, 15).map(s => h('li', null, s)))));
+  if (r.badAnswer.length) notes.push(h('div', { class: 'note warn' }, h('b', null, `${r.badAnswer.length} câu có đáp án không hợp lệ (sẽ coi như thiếu đáp án)`), h('ul', null, r.badAnswer.slice(0, 15).map(s => h('li', null, s)))));
+  const list30 = a => a.slice(0, 30).join(', ') + (a.length > 30 ? '…' : '');
+  if (r.more) {
+    const ask = `Làm tiếp từ câu ${r.more + 1} đến hết đề, theo đúng cấu trúc JSON và các quy tắc ở trên.`;
+    notes.push(h('div', { class: 'note warn' },
+      h('b', null, `AI mới làm đến câu ${r.more}, đề vẫn còn tiếp`),
+      h('span', null, 'Lưu phần này trước. Sau đó nhắn AI câu bên dưới, dán kết quả vào "Thêm bộ đề" và chọn "Thêm vào bộ đề có sẵn" để nối vào.'),
+      h('div', { class: 'row', style: 'margin-top:6px' }, btn('Sao chép câu nhắn "Làm tiếp"', () => copyText(ask, 'Đã sao chép. Dán vào AI để làm tiếp.')))));
+  }
+  if (r.aiSolved.length) notes.push(h('div', { class: 'note ai' }, h('b', null, `${r.aiSolved.length} câu đề không có đáp án, AI đã tự giải`), h('span', null, `Câu số ${list30(r.aiSolved)}. Các câu này được đánh dấu "AI giải" trong app. Nên dò lại, nhất là các câu AI ghi không chắc chắn.`)));
+  if (r.unsure.length) notes.push(h('div', { class: 'note warn' }, h('b', null, `${r.unsure.length} câu AI không chắc chắn`), h('span', null, `Câu số ${list30(r.unsure)}. Kiểm tra lại đáp án các câu này trước khi ôn.`)));
+  if (r.suspect.length) notes.push(h('div', { class: 'note warn' }, h('b', null, `${r.suspect.length} câu AI nghi đáp án của đề bị sai`), h('span', null, `Câu số ${list30(r.suspect)}. App vẫn giữ đáp án của đề, lý do AI nghi ngờ nằm trong phần giải thích.`)));
+  if (r.noAnswer.length) notes.push(h('div', { class: 'note warn' }, h('b', null, `${r.noAnswer.length} câu chưa có đáp án`), h('span', null, `Câu số ${r.noAnswer.slice(0, 30).join(', ')}${r.noAnswer.length > 30 ? '…' : ''}. Các câu này sẽ bị bỏ qua khi làm bài, bạn có thể thêm đáp án sau ở "Xem & sửa".`)));
+
+  const titleIn = h('input', { type: 'text', id: 'importTitle', value: r.title || ('Bộ đề ' + new Date().toLocaleDateString('vi-VN')) });
+  const modeNew = h('input', { type: 'radio', name: 'importMode', id: 'modeNew', value: 'new', checked: true });
+  const modeAdd = h('input', { type: 'radio', name: 'importMode', id: 'modeAdd', value: 'add' });
+  const sel = h('select', { id: 'importTarget' }, state.sets.map(s => h('option', { value: s.id }, `${s.title} (${s.questions.length} câu)`)));
+  const preview = h('div', { class: 'qlist' }, r.questions.slice(0, 3).map((q, i) => qItem(q, i)));
+
+  function doSave() {
+    if (!n) { toast('Không có câu hỏi nào hợp lệ để lưu.'); return; }
+    let set;
+    if (modeAdd.checked && state.sets.length) {
+      set = state.sets.find(s => s.id === sel.value);
+      const seen = new Set(set.questions.map(q => q.question + '|' + q.options.join('|')));
+      const fresh = r.questions.filter(q => !seen.has(q.question + '|' + q.options.join('|')));
+      set.questions.push(...fresh);
+      set.updatedAt = Date.now();
+      toast(`Đã thêm ${fresh.length} câu vào "${set.title}"` + (fresh.length < n ? ` (bỏ ${n - fresh.length} câu trùng)` : ''), 3500);
+    } else {
+      set = { id: uid(), title: titleIn.value.trim() || 'Bộ đề chưa đặt tên', questions: r.questions, createdAt: Date.now(), updatedAt: Date.now() };
+      state.sets.unshift(set);
+      toast(`Đã lưu "${set.title}" (${n} câu)`);
+    }
+    save();
+    importDraft = { text: '', result: null, error: '' };
+    go('detail', { ref: { source: 'local', id: set.id } });
+  }
+
+  return h('section', { id: 'importResult', class: 'panel stack' },
+    h('div', { class: 'sec-head' }, h('h2', null, `Đọc được ${n} câu hỏi`), h('span', { class: 'muted small' }, 'Xem trước 3 câu đầu')),
+    notes, preview,
+    h('div', { class: 'stack', style: 'gap:10px' },
+      h('label', { class: 'switch', for: 'modeNew' }, modeNew, 'Lưu thành bộ đề mới'),
+      h('label', { class: 'field', for: 'importTitle', style: 'padding-left:28px' }, 'Tên bộ đề', titleIn),
+      state.sets.length ? h('label', { class: 'switch', for: 'modeAdd' }, modeAdd, 'Thêm vào bộ đề có sẵn (dùng khi chia đề thành nhiều phần)') : null,
+      state.sets.length ? h('div', { style: 'padding-left:28px' }, sel) : null,
+),
+    h('div', { class: 'row' }, btn('Lưu bộ đề', doSave, 'primary big'), btn('Hủy', () => { importDraft = { text: '', result: null, error: '' }; go('home'); }, 'ghost')));
+}
+
+/* ---------- Question list item ---------- */
+function qItem(q, i, opts = {}) {
+  const picked = opts.picked || [];
+  return h('div', { class: 'qitem' + (q.answer.length ? '' : ' flag') },
+    h('div', { class: 'row between', style: 'align-items:flex-start;flex-wrap:nowrap' },
+      richText(q.question, 'qtext', h('span', { class: 'muted' }, `Câu ${i + 1}. `)),
+      opts.actions || null),
+    h('ol', null, q.options.map((o, j) => {
+      const L = LETTERS[j];
+      const cls = q.answer.includes(L) ? 'right' : (picked.includes(L) ? 'picked' : '');
+      return h('li', { class: cls }, h('span', { class: 'k' }, L), optText(o));
+    })),
+    !q.answer.length ? h('p', { class: 'small', style: 'color:var(--warn);font-weight:600' }, 'Chưa có đáp án — câu này sẽ bị bỏ qua khi làm bài.') : null,
+    q.aiAnswer ? h('div', { class: 'chips' }, h('span', { class: 'chip ai' }, 'Đáp án do AI giải'), h('span', { class: 'small muted' }, 'Đã dò đúng? Bấm Sửa rồi Lưu để bỏ dấu này.')) : null,
+    opts.note ? h('p', { class: 'small', style: 'font-weight:600;color:var(--muted)' }, opts.note) : null,
+    q.explanation ? h('p', { class: 'exp' }, q.explanation) : null);
+}
+
+/* ---------- Edit a question ---------- */
+function canEdit(ref) { return !!getSet(ref); }
+function openEdit(ref, qi, after) {
+  const set = getSet(ref); if (!set) return;
+  const q = set.questions[qi];
+  const fQ = h('textarea', { id: 'edQ', style: 'min-height:90px' }); fQ.value = q.question;
+  const fO = h('textarea', { id: 'edO' }); fO.value = q.options.join('\n');
+  const fA = h('input', { type: 'text', id: 'edA', value: q.answer.join(', '), placeholder: 'Ví dụ: B hoặc A, C' });
+  const fE = h('textarea', { id: 'edE', style: 'min-height:70px' }); fE.value = q.explanation || '';
+  const err = h('p', { class: 'err' });
+  const saveBtn = btn('Lưu thay đổi', async () => {
+    const options = fO.value.split('\n').map(s => s.trim()).filter(Boolean);
+    const ans = normAnswer(fA.value, options.length);
+    if (!fQ.value.trim()) { err.textContent = 'Câu hỏi đang trống.'; return; }
+    if (options.length < 2) { err.textContent = 'Cần ít nhất 2 lựa chọn, mỗi dòng một lựa chọn.'; return; }
+    if (ans.bad.length) { err.textContent = `Đáp án "${ans.bad.join(', ')}" không khớp lựa chọn nào. Có ${options.length} lựa chọn: A–${LETTERS[options.length - 1]}.`; return; }
+    set.questions[qi] = { question: fQ.value.trim(), options, answer: ans.letters, explanation: fE.value.trim() }; // saving by hand counts as checked, so the AI mark goes away
+    saveBtn.disabled = true;
+    persist(ref, set); close(); toast('Đã lưu câu hỏi'); after && after();
+  }, 'primary');
+  const close = openModal(
+    h('h2', null, `Sửa câu ${qi + 1}`),
+    h('label', { class: 'field', for: 'edQ' }, 'Câu hỏi', fQ),
+    h('label', { class: 'field', for: 'edO' }, 'Các lựa chọn (mỗi dòng một lựa chọn, theo thứ tự A, B, C…)', fO),
+    h('label', { class: 'field', for: 'edA' }, 'Đáp án đúng (để trống nếu chưa biết)', fA),
+    h('label', { class: 'field', for: 'edE' }, 'Giải thích (không bắt buộc)', fE),
+    err,
+    h('div', { class: 'row' }, saveBtn, btn('Hủy', () => close(), 'ghost')));
+  setTimeout(() => fQ.focus(), 30);
+}
+
+/* ---------- Set detail ---------- */
+function historyPanel(set) {
+  const hist = state.history[set.id];
+  const runs = (hist && hist.runs) || [];
+  const head = h('div', { class: 'sec-head' }, h('h2', null, 'Lịch sử làm bài'),
+    hist && hist.attempts ? h('span', { class: 'muted small num' }, `Cao nhất ${hist.best}% · ${hist.attempts} lần làm đủ bộ`) : null);
+  if (!runs.length) return h('section', { class: 'panel stack' }, head, h('p', { class: 'muted' }, 'Chưa có lần làm nào trên máy này. Kết quả mỗi lần làm bài sẽ hiện ở đây.'));
+  const fmtDate = t => new Date(t).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
+  const color = p => p >= 70 ? 'var(--ok)' : p >= 50 ? 'var(--warn)' : 'var(--bad)';
+  const table = h('div', { class: 'tablewrap' }, h('table', { class: 'runs' },
+    h('thead', null, h('tr', null, h('th', null, 'Thời điểm'), h('th', null, 'Kết quả'), h('th', null, 'Điểm'), h('th', null, 'Thời gian'), h('th', null, 'Kiểu'))),
+    h('tbody', null, runs.map(r => h('tr', null,
+      h('td', null, fmtDate(r.at)),
+      h('td', null, h('b', { style: `color:${color(r.pct)}` }, r.pct + '%'), h('span', { class: 'muted' }, ` (${r.correct}/${r.total})`)),
+      h('td', null, (r.score || 0).toLocaleString('vi-VN')),
+      h('td', null, r.ms ? fmtTime(r.ms) : '–'),
+      h('td', null, r.retry ? h('span', { class: 'chip' }, 'Câu sai') : r.mode === 'test' ? h('span', { class: 'chip accent' }, 'Kiểm tra') : h('span', { class: 'chip ok' }, 'Ôn tập')))))));
+  return h('section', { class: 'panel stack' }, head,
+    h('div', { class: 'spark', 'aria-hidden': 'true' }, runs.slice(0, 20).reverse().map(r => h('i', { style: `height:${Math.max(6, r.pct)}%;background:${color(r.pct)}`, title: r.pct + '%' }))),
+    table,
+    h('div', { class: 'row' }, confirmBtn('Xóa lịch sử của bộ đề này', 'Bấm lần nữa để xóa lịch sử', () => { delete state.history[set.id]; save(); toast('Đã xóa lịch sử'); refresh(); }, 'ghost danger')));
+}
+function viewDetail() {
+  const ref = view.ref, set = getSet(ref);
+  if (!set) return h('div', { class: 'empty' }, h('p', null, 'Không tìm thấy bộ đề này. Có thể nó đã bị xóa.'), btn('Về thư viện', () => go('home'), 'primary'));
+  const playableCount = set.questions.filter(playable).length;
+  const titleIn = h('input', { type: 'text', id: 'detailTitle', value: set.title });
+  const head = h('section', { class: 'panel stack' },
+    h('label', { class: 'field', for: 'detailTitle' }, 'Tên bộ đề', h('div', { class: 'row', style: 'flex-wrap:nowrap' }, titleIn, btn('Đổi tên', () => { set.title = titleIn.value.trim() || set.title; persist(ref, set); toast('Đã đổi tên'); }))),
+    h('p', { class: 'muted num' }, `${set.questions.length} câu · ${playableCount} câu làm được` + (set.questions.length - playableCount ? ` · ${set.questions.length - playableCount} câu thiếu đáp án` : '')),
+    h('div', { class: 'row' },
+      btn('Làm bài', () => go('setup', { ref }), 'primary big'),
+      btn(canDownload() ? 'Tải file đề' : 'Sao chép JSON', () => downloadSet(set)),
+      btn('Thêm câu từ AI', () => go('import'))));
+  const list = h('section', { class: 'stack' },
+    h('h2', null, 'Câu hỏi'),
+    h('div', { class: 'qlist' }, set.questions.map((q, i) => qItem(q, i, {
+      actions: h('div', { class: 'row', style: 'flex:none' },
+        btn('Sửa', () => openEdit(ref, i, refresh), 'ghost'),
+        confirmBtn('Xóa', 'Xóa?', () => { set.questions.splice(i, 1); persist(ref, set); refresh(); }, 'ghost danger'))
+    }))));
+  return h('div', { class: 'stack', style: 'gap:20px' }, head, historyPanel(set), list);
+}
+
+/* ---------- Setup ---------- */
+function viewSetup() {
+  const ref = view.ref, set = getSet(ref);
+  if (!set) return h('div', { class: 'empty' }, h('p', null, 'Không tìm thấy bộ đề này.'), btn('Về thư viện', () => go('home'), 'primary'));
+  const s = state.settings;
+  const n = set.questions.filter(playable).length;
+  const group = (name, options, current, onChange) => h('div', { class: 'opt-group', role: 'radiogroup' }, options.map(([val, label]) => {
+    const id = name + '-' + val;
+    const inp = h('input', { type: 'radio', name, id, value: String(val), checked: current === val });
+    inp.addEventListener('change', () => { onChange(val); save(); });
+    return h('label', { for: id }, inp, h('span', null, label));
+  }));
+  const counts = [[0, `Tất cả (${n})`], ...[10, 20, 30, 50].filter(c => c < n).map(c => [c, c + ' câu'])];
+  if (!counts.some(c => c[0] === s.count)) s.count = 0;
+  const shQ = h('input', { type: 'checkbox', id: 'shuffleQ', checked: s.shuffleQ }); shQ.addEventListener('change', () => { s.shuffleQ = shQ.checked; save(); });
+  const shO = h('input', { type: 'checkbox', id: 'shuffleO', checked: s.shuffleO }); shO.addEventListener('change', () => { s.shuffleO = shO.checked; save(); });
+  const isTest = s.mode === 'test';
+  return h('section', { class: 'panel stack', style: 'gap:18px' },
+    h('div', { class: 'stack', style: 'gap:4px' }, h('p', { class: 'muted small' }, 'Chuẩn bị làm bài'), h('h1', null, set.title)),
+    n === 0 ? h('div', { class: 'note warn' }, h('b', null, 'Bộ đề chưa có câu nào có đáp án.'), h('span', null, 'Vào "Xem & lịch sử" để thêm đáp án trước.')) : null,
+    h('div', { class: 'stack', style: 'gap:8px' }, h('b', null, 'Chế độ'),
+      group('mode', [['practice', 'Ôn tập'], ['test', 'Kiểm tra']], s.mode, v => { s.mode = v; refresh(); }),
+      h('p', { class: 'muted small' }, isTest
+        ? 'Làm hết rồi bấm "Nộp bài" mới chấm điểm. Trước khi nộp có thể quay lại đổi đáp án.'
+        : 'Chọn xong hiện ngay đúng hay sai kèm giải thích.')),
+    h('div', { class: 'stack', style: 'gap:8px' }, h('b', null, 'Số câu'), group('count', counts, s.count, v => s.count = v)),
+    h('div', { class: 'stack', style: 'gap:8px' }, h('b', null, 'Thời gian mỗi câu'),
+      group('timer', [[0, 'Không giới hạn'], [10, '10 giây'], [20, '20 giây'], [30, '30 giây'], [60, '60 giây']], s.timer, v => s.timer = v),
+      isTest ? h('p', { class: 'muted small' }, 'Ở chế độ Kiểm tra, tổng thời gian làm bài = số câu × thời gian mỗi câu. Hết giờ bài tự nộp.') : null),
+    h('div', { class: 'stack', style: 'gap:10px' },
+      h('label', { class: 'switch', for: 'shuffleQ' }, shQ, 'Xáo trộn thứ tự câu hỏi'),
+      h('label', { class: 'switch', for: 'shuffleO' }, shO, 'Xáo trộn thứ tự đáp án'),
+      h('p', { class: 'muted small', style: 'padding-left:28px' }, 'Tắt xáo đáp án nếu đề có lựa chọn kiểu "Cả A và B đều đúng".')),
+    h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn primary big', disabled: n === 0, onclick: () => startPlay(ref) }, isTest ? 'Bắt đầu kiểm tra' : 'Bắt đầu ôn tập'), btn('Quay lại', () => go('home'), 'ghost')));
+}
+
+/* ---------- Play ---------- */
+// Each item keeps its own state, so the player can move back and forth freely:
+// sel = chosen tiles (display order), done/ok/gain/timeout = graded (practice), left = ms left on its clock (practice).
+let play = null, raf = 0;
+function stopTimer() { cancelAnimationFrame(raf); raf = 0; }
+const isRight = it => { const c = it.q.answer.map(letterIdx), ch = [...it.sel].map(d => it.order[d]); return ch.length > 0 && ch.length === c.length && ch.every(x => c.includes(x)); };
+const answeredCount = p => p.items.filter(it => p.mode === 'test' ? it.sel.size > 0 : it.done).length;
+function fmtLeft(ms) { const s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+function startPlay(ref, onlyQis) {
+  const set = getSet(ref); if (!set) return;
+  const s = state.settings;
+  let qis = (onlyQis || set.questions.map((_, i) => i)).filter(i => playable(set.questions[i]));
+  if (!qis.length) { toast('Không còn câu nào có đáp án để làm.'); return; }
+  if (s.shuffleQ) shuffle(qis);
+  if (!onlyQis && s.count && s.count < qis.length) qis = qis.slice(0, s.count);
+  const items = qis.map(qi => {
+    const q = structuredClone(set.questions[qi]);
+    const order = q.options.map((_, i) => i);
+    if (s.shuffleO) shuffle(order);
+    return { qi, q, order, multi: q.answer.length > 1, sel: new Set(), done: false, ok: false, gain: 0, timeout: false, left: s.timer * 1000 };
+  });
+  const mode = s.mode === 'test' ? 'test' : 'practice';
+  play = { ref, setId: set.id, title: set.title, items, i: 0, mode, timer: s.timer, startedAt: Date.now(), retry: !!onlyQis,
+    score: 0, streak: 0, bestStreak: 0, finished: false, justAnswered: -1,
+    testDeadline: mode === 'test' && s.timer ? Date.now() + s.timer * 1000 * items.length : 0 };
+  enterQuestion();
+  view = { name: 'play' };
+  render(true);
+}
+function enterQuestion() { const p = play, it = p.items[p.i]; p.tickStart = performance.now(); p.tickBase = it.left; }
+function curLeft() { const p = play; return Math.max(0, p.tickBase - (performance.now() - p.tickStart)); }
+function goTo(i) {
+  const p = play; if (!p || p.finished) return;
+  i = Math.max(0, Math.min(p.items.length - 1, i));
+  if (i === p.i) return;
+  stopTimer();
+  const it = p.items[p.i];
+  if (p.mode === 'practice' && p.timer && !it.done) it.left = curLeft();
+  p.i = i; p.justAnswered = -1;
+  enterQuestion();
+  render(true);
+}
+function nextUndone() {
+  const p = play, n = p.items.length;
+  for (let k = 1; k <= n; k++) { const j = (p.i + k) % n; if (!p.items[j].done) return j; }
+  return -1;
+}
+function practiceNext() { const j = nextUndone(); if (j < 0) finish(); else goTo(j); }
+
+function summaryPanel(p) {
+  const n = p.items.length, answered = answeredCount(p), left = n - answered;
+  const correct = p.items.filter(it => it.done && it.ok).length;
+  const wrong = p.items.filter(it => it.done && !it.ok).length;
+  const grid = h('div', { class: 'qgrid' }, p.items.map((it, idx) => {
+    let cls = 'qn';
+    if (p.mode === 'practice' && it.done) cls += it.ok ? ' ok' : ' bad';
+    if (p.mode === 'test' && it.sel.size) cls += ' filled';
+    if (idx === p.i) cls += ' cur';
+    const status = p.mode === 'practice' ? (it.done ? (it.ok ? 'đúng' : 'sai') : 'chưa làm') : (it.sel.size ? 'đã chọn' : 'chưa làm');
+    return h('button', { type: 'button', class: cls, 'aria-label': `Câu ${idx + 1}, ${status}`, 'aria-current': idx === p.i ? 'true' : null, onclick: () => goTo(idx) }, idx + 1);
+  }));
+  const legend = p.mode === 'practice'
+    ? h('div', { class: 'legend' }, h('span', null, h('i', { style: 'background:var(--tile-ok)' }), 'Đúng'), h('span', null, h('i', { style: 'background:var(--tile-bad)' }), 'Sai'), h('span', null, h('i', { style: 'background:var(--surface-2);border:1px solid var(--line)' }), 'Chưa làm'))
+    : h('div', { class: 'legend' }, h('span', null, h('i', { style: 'background:var(--accent)' }), 'Đã chọn'), h('span', null, h('i', { style: 'background:var(--surface-2);border:1px solid var(--line)' }), 'Chưa làm'));
+  const endLabel = p.mode === 'test' ? 'Nộp bài' : 'Kết thúc';
+  const endBtn = left > 0
+    ? confirmBtn(endLabel, `Còn ${left} câu chưa làm. Bấm lần nữa`, finish, 'primary')
+    : btn(p.mode === 'test' ? 'Nộp bài' : 'Xem kết quả', finish, 'primary');
+  endBtn.style.width = '100%'; endBtn.style.justifyContent = 'center'; endBtn.style.whiteSpace = 'normal';
+  return h('aside', { class: 'aside', 'aria-label': 'Tổng quan bài làm' },
+    h('div', { class: 'row between' }, h('b', null, 'Tổng quan'), h('span', { class: 'chip ' + (p.mode === 'test' ? 'accent' : 'ok') }, p.mode === 'test' ? 'Kiểm tra' : 'Ôn tập')),
+    p.mode === 'practice'
+      ? h('div', { class: 'sumstats' }, h('div', null, h('b', { style: 'color:var(--ok)' }, correct), h('span', null, 'Đúng')), h('div', null, h('b', { style: 'color:var(--bad)' }, wrong), h('span', null, 'Sai')), h('div', null, h('b', null, left), h('span', null, 'Chưa làm')))
+      : h('div', { class: 'sumstats' }, h('div', null, h('b', null, answered), h('span', null, 'Đã làm')), h('div', null, h('b', null, left), h('span', null, 'Chưa làm'))),
+    grid, legend, endBtn,
+    h('p', { class: 'kbd' }, 'Phím ← → để chuyển câu'));
+}
+
+function viewPlay() {
+  const p = play, it = p.items[p.i], n = p.items.length;
+  const graded = p.mode === 'practice' && it.done;
+  const answered = answeredCount(p);
+  const hud = h('div', { class: 'hud' },
+    confirmBtn('Thoát', 'Bấm lần nữa để thoát', () => go('home'), 'ghost'),
+    h('div', { class: 'stats' },
+      h('span', { class: 'pill' }, `Câu ${p.i + 1}/${n}`),
+      p.mode === 'practice' && p.streak >= 2 ? h('span', { class: 'pill hot' }, `Chuỗi ${p.streak}`) : null,
+      p.mode === 'practice' ? h('span', { class: 'pill' }, `${p.score.toLocaleString('vi-VN')} điểm`) : h('span', { class: 'pill' }, `Đã làm ${answered}/${n}`),
+      p.mode === 'test' && p.testDeadline ? h('span', { class: 'pill num', id: 'testTime' }, fmtLeft(p.testDeadline - Date.now())) : null));
+  const prog = h('div', { class: 'progress', 'aria-hidden': 'true' }, h('i', { style: `width:${answered / n * 100}%` }));
+
+  const practiceClock = p.mode === 'practice' && p.timer;
+  const timerBar = practiceClock && !graded ? h('div', { class: 'timer', id: 'timerBar', style: `transform:scaleX(${it.left / (p.timer * 1000)})` }) : null;
+  const hint = p.mode === 'test'
+    ? (it.multi ? 'Chọn TẤT CẢ đáp án đúng · đổi được đến khi nộp bài' : 'Chọn 1 đáp án · đổi được đến khi nộp bài')
+    : (it.multi ? 'Chọn TẤT CẢ đáp án đúng rồi bấm Xác nhận' : 'Chọn 1 đáp án');
+  const card = h('div', { class: 'qcard' }, timerBar,
+    h('div', { class: 'qmeta' }, h('span', { class: 'muted small' }, hint), practiceClock ? h('span', { class: 'pill num', id: 'timeLabel' }, graded ? '–' : Math.ceil(it.left / 1000) + 's') : null),
+    richText(it.q.question, 'qtext'),
+    graded && it.ok && it.gain && p.justAnswered === p.i ? h('div', { class: 'gain' }, '+' + it.gain) : null);
+
+  const correctOrig = it.q.answer.map(letterIdx);
+  const chosenOrig = [...it.sel].map(d => it.order[d]);
+  const tiles = h('div', { class: 'tiles' }, it.order.map((orig, d) => {
+    let cls = 'tile';
+    if (graded) {
+      if (correctOrig.includes(orig)) cls += ' is-correct';
+      else if (chosenOrig.includes(orig)) cls += ' is-wrong';
+      else cls += ' is-dim';
+    } else if (it.sel.has(d)) cls += ' sel';
+    return h('button', { type: 'button', class: cls, style: `--tile:${TILE_COLORS[d % TILE_COLORS.length]}`, disabled: graded, 'aria-pressed': graded ? null : String(it.sel.has(d)), onclick: () => choose(d) },
+      h('span', { class: 'k' }, h('span', null, LETTERS[d])), optText(it.q.options[orig], 't'));
+  }));
+
+  const parts = [hud, prog, card, tiles];
+  if (p.mode === 'practice' && !graded && it.multi) parts.push(h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn primary big', disabled: it.sel.size === 0, onclick: () => answer(false) }, 'Xác nhận'), h('span', { class: 'kbd' }, 'Phím 1–9 để chọn, Enter để xác nhận')));
+  if (graded) {
+    const correctDisp = it.order.map((o, d) => correctOrig.includes(o) ? LETTERS[d] : null).filter(Boolean).join(', ');
+    parts.push(h('div', { class: 'feedback ' + (it.ok ? 'ok' : 'bad') },
+      h('div', { class: 'fh' }, it.ok ? 'Chính xác!' : (it.timeout ? 'Hết giờ!' : 'Chưa đúng')),
+      !it.ok ? h('p', null, 'Đáp án đúng: ', h('b', null, correctDisp)) : null,
+      it.q.explanation ? h('p', { class: 'exp' }, it.q.explanation) : null,
+      it.q.aiAnswer ? h('p', { class: 'small muted' }, 'Đáp án câu này do AI tự giải, có thể sai. Thấy sai thì bấm "Báo sai / sửa câu này".') : null));
+  }
+
+  // Navigation row: previous / main action / next
+  const allDone = p.mode === 'practice' && nextUndone() < 0;
+  let main = null;
+  if (graded) main = h('button', { type: 'button', class: 'btn primary big', id: 'nextBtn', onclick: practiceNext }, allDone ? 'Xem kết quả' : 'Câu tiếp');
+  if (p.mode === 'test' && p.i === n - 1) {
+    const left = n - answered;
+    main = left > 0 ? confirmBtn('Nộp bài', `Còn ${left} câu chưa làm. Bấm lần nữa`, finish, 'primary big') : btn('Nộp bài', finish, 'primary big');
+  }
+  parts.push(h('div', { class: 'navrow' },
+    h('button', { type: 'button', class: 'btn big', disabled: p.i === 0, onclick: () => goTo(p.i - 1) }, '← Câu trước'),
+    main,
+    h('button', { type: 'button', class: 'btn big', disabled: p.i === n - 1, onclick: () => goTo(p.i + 1) }, 'Câu sau →')));
+  if (graded && canEdit(p.ref)) parts.push(h('div', { class: 'row' }, btn('Báo sai / sửa câu này', () => openEdit(p.ref, it.qi, () => toast('Đã lưu. Thay đổi áp dụng từ lần làm sau.')), 'ghost')));
+  if (!graded && !it.multi) parts.push(h('span', { class: 'kbd' }, `Mẹo: phím 1–${it.order.length} hoặc A–${LETTERS[it.order.length - 1]} để chọn, ← → để chuyển câu`));
+
+  const root = h('div', { class: 'playgrid' }, h('div', { class: 'play' }, parts), summaryPanel(p));
+  if (!p.finished && ((p.mode === 'test' && p.testDeadline) || (practiceClock && !graded))) startTick();
+  if (graded) setTimeout(() => { const nb = document.getElementById('nextBtn'); if (nb) nb.focus({ preventScroll: true }); }, 0);
+  return root;
+}
+function startTick() {
+  stopTimer();
+  const p = play;
+  const loop = () => {
+    if (play !== p || p.finished || view.name !== 'play') return;
+    if (p.mode === 'test') {
+      const left = Math.max(0, p.testDeadline - Date.now());
+      const lab = document.getElementById('testTime');
+      if (lab) { lab.textContent = fmtLeft(left); lab.classList.toggle('low', left < 60000); }
+      if (left <= 0) { finish(); toast('Hết giờ! Bài đã được nộp tự động.', 3500); return; }
+    } else {
+      const it = p.items[p.i]; if (it.done) return;
+      const total = p.timer * 1000, left = curLeft();
+      const bar = document.getElementById('timerBar'), lab = document.getElementById('timeLabel');
+      if (bar) { bar.style.transform = `scaleX(${left / total})`; bar.classList.toggle('low', left < 5000); }
+      if (lab) lab.textContent = Math.ceil(left / 1000) + 's';
+      if (left <= 0) { answer(true); return; }
+    }
+    raf = requestAnimationFrame(loop);
+  };
+  raf = requestAnimationFrame(loop);
+}
+function choose(d) {
+  const p = play; if (!p || p.finished) return;
+  const it = p.items[p.i];
+  if (d < 0 || d >= it.order.length || (p.mode === 'practice' && it.done)) return;
+  if (it.multi) { it.sel.has(d) ? it.sel.delete(d) : it.sel.add(d); refresh(); return; }
+  it.sel = new Set([d]);
+  if (p.mode === 'practice') answer(false); else refresh();
+}
+function answer(timeout) {
+  const p = play; if (!p || p.mode !== 'practice') return;
+  const it = p.items[p.i]; if (it.done) return;
+  stopTimer();
+  const left = p.timer ? curLeft() : 0;
+  it.left = left;
+  it.ok = isRight(it);
+  it.timeout = timeout && !it.ok;
+  it.done = true;
+  if (it.ok) {
+    p.streak++; p.bestStreak = Math.max(p.bestStreak, p.streak);
+    const frac = p.timer ? left / (p.timer * 1000) : 1;
+    it.gain = Math.round(600 + 400 * frac) + Math.min(500, 100 * (p.streak - 1));
+    p.score += it.gain;
+  } else p.streak = 0;
+  p.justAnswered = p.i;
+  refresh();
+}
+function finish() {
+  const p = play; if (!p || p.finished) return;
+  stopTimer();
+  p.finished = true;
+  if (p.mode === 'test') {
+    // Grade everything now, in question order, so streaks and points follow the paper.
+    let streak = 0;
+    for (const it of p.items) {
+      it.ok = isRight(it); it.done = true;
+      if (it.ok) { streak++; p.bestStreak = Math.max(p.bestStreak, streak); it.gain = 1000; p.score += 1000; } else streak = 0;
+    }
+  }
+  for (const it of p.items) it.skipped = p.mode === 'test' ? it.sel.size === 0 : !it.done;
+  p.correct = p.items.filter(it => it.ok).length;
+  p.log = p.items.map(it => ({ qi: it.qi, q: it.q, chosen: [...it.sel].map(d => LETTERS[it.order[d]]).sort(), ok: it.ok, skipped: it.skipped }));
+  p.duration = Date.now() - p.startedAt;
+  const pct = Math.round(p.correct / p.items.length * 100);
+  const h0 = state.history[p.setId] || { best: 0, attempts: 0 };
+  h0.runs = [{ at: Date.now(), pct, correct: p.correct, total: p.items.length, score: p.score, ms: p.duration, retry: p.retry, mode: p.mode }, ...(h0.runs || [])].slice(0, 30);
+  if (!p.retry) { h0.best = Math.max(h0.best || 0, pct); h0.attempts = (h0.attempts || 0) + 1; h0.last = pct; }
+  h0.lastAt = Date.now();
+  state.history[p.setId] = h0;
+  save();
+  view = { name: 'result', showAll: false };
+  render(true);
+}
+document.addEventListener('keydown', e => {
+  if (view.name !== 'play' || !play || play.finished || document.querySelector('.overlay')) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const tag = (e.target && e.target.tagName) || '';
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  const p = play, it = p.items[p.i];
+  if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(p.i - 1); return; }
+  if (e.key === 'ArrowRight') { e.preventDefault(); goTo(p.i + 1); return; }
+  const graded = p.mode === 'practice' && it.done;
+  if (!graded) {
+    let d = -1;
+    if (/^[1-9]$/.test(e.key)) d = Number(e.key) - 1;
+    else if (/^[a-z]$/i.test(e.key)) d = letterIdx(e.key.toUpperCase());
+    if (d >= 0) { e.preventDefault(); choose(d); return; }
+  }
+  if (e.key === 'Enter') {
+    if (tag === 'BUTTON' && e.target.id !== 'nextBtn') return;
+    e.preventDefault();
+    if (p.mode === 'practice') { if (graded) practiceNext(); else if (it.multi && it.sel.size) answer(false); }
+    else goTo(p.i + 1);
+  } else if (e.key === ' ' && graded && (tag !== 'BUTTON' || e.target.id === 'nextBtn')) { e.preventDefault(); practiceNext(); }
+});
+
+/* ---------- Result ---------- */
+function viewResult() {
+  const p = play;
+  const total = p.items.length, pct = Math.round(p.correct / total * 100);
+  const missed = p.log.filter(l => !l.ok);
+  const skipped = p.log.filter(l => l.skipped).length;
+  const hist = state.history[p.setId];
+  const verdict = pct >= 90 ? 'Xuất sắc! Bạn nắm rất chắc bộ đề này.' : pct >= 70 ? 'Khá tốt! Ôn lại vài câu sai là ổn.' : pct >= 50 ? 'Tạm được. Làm lại câu sai thêm vài lượt nhé.' : 'Cần ôn thêm. Xem kỹ giải thích các câu sai bên dưới.';
+  const modeName = p.retry ? 'Làm lại câu sai' : (p.mode === 'test' ? 'Kiểm tra' : 'Ôn tập');
+  const tiles = p.mode === 'test'
+    ? [[`${p.correct}/${total}`, 'Câu đúng'], [total - p.correct - skipped, 'Câu sai'], [skipped, 'Bỏ trống'], [fmtTime(p.duration), 'Thời gian']]
+    : [[`${p.correct}/${total}`, 'Câu đúng'], [p.score.toLocaleString('vi-VN'), 'Điểm'], [skipped ? skipped : p.bestStreak, skipped ? 'Bỏ qua' : 'Chuỗi dài nhất'], [fmtTime(p.duration), 'Thời gian']];
+  const head = h('section', { class: 'hero', style: 'gap:18px' },
+    h('div', { class: 'stack', style: 'gap:4px' },
+      h('p', { class: 'muted small' }, modeName + ' · ' + p.title),
+      h('div', { class: 'bigpct', style: `color:${pct >= 70 ? 'var(--ok)' : pct >= 50 ? 'var(--warn)' : 'var(--bad)'}` }, pct + '%'),
+      h('p', null, verdict)),
+    h('div', { class: 'score' }, tiles.map(([v, l]) => h('div', null, h('b', null, v), h('span', null, l)))),
+    !p.retry && hist ? h('p', { class: 'muted small num' }, `Cao nhất của bạn với bộ đề này: ${hist.best}% · ${hist.attempts} lần làm`) : null,
+    h('div', { class: 'row' },
+      missed.length ? btn(`Làm lại ${missed.length} câu sai${skipped ? ' và bỏ trống' : ''}`, () => startPlay(p.ref, missed.map(w => w.qi)), 'primary big') : null,
+      btn('Làm lại từ đầu', () => startPlay(p.ref), missed.length ? 'big' : 'primary big'),
+      btn('Xem lịch sử', () => go('detail', { ref: p.ref }), 'ghost big'),
+      btn('Về thư viện', () => go('home'), 'ghost big')));
+  const parts = [head];
+  const shown = view.showAll ? p.log : missed;
+  const toggle = btn(view.showAll ? 'Chỉ hiện câu sai' : `Xem tất cả ${total} câu`, () => { view.showAll = !view.showAll; refresh(); }, 'ghost');
+  parts.push(h('section', { class: 'stack' },
+    h('div', { class: 'sec-head' }, h('h2', null, view.showAll ? `Toàn bộ bài làm (${total})` : `Các câu sai${skipped ? ' và bỏ trống' : ''} (${missed.length})`), toggle),
+    h('p', { class: 'muted small' }, 'Màu xanh là đáp án đúng, màu đỏ là lựa chọn sai của bạn. Thứ tự A, B, C theo đề gốc.'),
+    shown.length
+      ? h('div', { class: 'qlist' }, shown.map(w => qItem(w.q, w.qi, {
+          picked: w.chosen,
+          note: w.skipped ? 'Bạn bỏ trống câu này.' : (w.ok ? 'Bạn làm đúng câu này.' : null),
+          actions: canEdit(p.ref) ? btn('Sửa', () => openEdit(p.ref, w.qi, () => toast('Đã lưu câu hỏi')), 'ghost') : null })))
+      : h('div', { class: 'note ok' }, h('b', null, 'Không sai câu nào. Tuyệt vời!'))));
+  return h('div', { class: 'stack', style: 'gap:24px' }, parts);
+}
+
+/* ---------- Cloud sync: Google sign-in + Firestore (hosted version only) ---------- */
+// The config is public by design; access is guarded by the Firestore rules (each user reads/writes only users/<uid>/...).
+const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyCdPMIxP56g-2BYx_3TU8S9ZdkmYbmznWA',
+  authDomain: 'on-de-quiz.firebaseapp.com',
+  projectId: 'on-de-quiz',
+  storageBucket: 'on-de-quiz.firebasestorage.app',
+  messagingSenderId: '795491404640',
+  appId: '1:795491404640:web:8e41acf3014fed8316ac05'
+};
+const FB_SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+// status: 'off' = not available here, 'loading', 'out' = signed out, 'in' = signed in
+const cloud = { status: 'off', user: null, lastSync: 0, busy: false, error: '' };
+let fb = null, syncTimer = 0, syncing = false, syncAgain = false, lastSyncedSig = '';
+
+const syncSig = () => JSON.stringify([state.sets.map(s => [s.id, s.updatedAt || 0]), state.history, state.deleted]);
+function scheduleSync() {
+  if (cloud.status !== 'in') return;
+  if (syncSig() === lastSyncedSig) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(syncNow, 1500);
+}
+async function initCloud() {
+  const okHost = location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname);
+  if (!okHost || window.claude) return; // file:// or inside Claude: stay local-only
+  cloud.status = 'loading';
+  try {
+    const [appM, authM, fsM] = await Promise.all([import(FB_SDK + 'firebase-app.js'), import(FB_SDK + 'firebase-auth.js'), import(FB_SDK + 'firebase-firestore.js')]);
+    const app = appM.initializeApp(FIREBASE_CONFIG);
+    fb = { auth: authM.getAuth(app), db: fsM.getFirestore(app), A: authM, F: fsM };
+    cloud.status = 'out';
+    fb.A.onAuthStateChanged(fb.auth, u => {
+      cloud.user = u ? { uid: u.uid, name: u.displayName || '', email: u.email || '', photo: u.photoURL || '' } : null;
+      cloud.status = u ? 'in' : 'out';
+      cloud.error = ''; lastSyncedSig = '';
+      updateChrome();
+      if (u) syncNow();
+    });
+    fb.A.getRedirectResult(fb.auth).catch(cloudError);
+  } catch (e) {
+    cloud.status = 'off';
+    cloud.error = 'Không tải được phần đăng nhập. Kiểm tra mạng rồi tải lại trang.';
+  }
+  updateChrome();
+}
+async function signIn() {
+  if (!fb) { toast(cloud.error || 'Phần đăng nhập đang tải, thử lại sau vài giây.'); return; }
+  const provider = new fb.A.GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  try { await fb.A.signInWithPopup(fb.auth, provider); }
+  catch (e) {
+    const code = (e && e.code) || '';
+    if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
+      try { await fb.A.signInWithRedirect(fb.auth, provider); } catch (e2) { cloudError(e2); }
+    } else if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') cloudError(e);
+  }
+}
+async function signOutCloud() {
+  try { await fb.A.signOut(fb.auth); toast('Đã đăng xuất. Bộ đề vẫn còn trên máy này.'); } catch (e) { cloudError(e); }
+}
+function cloudError(e) {
+  const code = (e && e.code) || '';
+  cloud.error =
+    code === 'auth/unauthorized-domain' ? 'Trang này chưa được phép đăng nhập. Thêm tên miền vào Firebase → Authentication → Settings → Authorized domains.'
+    : code === 'permission-denied' ? 'Firestore từ chối ghi dữ liệu. Kiểm tra lại quy tắc bảo mật (tab Rules).'
+    : code === 'auth/network-request-failed' || code === 'unavailable' ? 'Mất kết nối mạng. Dữ liệu vẫn lưu trên máy và sẽ đồng bộ khi có mạng.'
+    : code === 'auth/web-storage-unsupported' || code === 'auth/internal-error' ? 'Trình duyệt này chặn đăng nhập (thường gặp khi mở trong Zalo/Messenger). Hãy mở link bằng Chrome hoặc Safari.'
+    : 'Chưa đồng bộ được: ' + ((e && e.message) || 'lỗi không rõ');
+  toast(cloud.error, 6000, true);
+  updateChrome();
+}
+function mergeHistory(a, b) {
+  const out = {};
+  for (const id of new Set([...Object.keys(a || {}), ...Object.keys(b || {})])) {
+    const x = (a || {})[id] || {}, y = (b || {})[id] || {};
+    const seen = new Set();
+    const runs = [...(x.runs || []), ...(y.runs || [])].filter(r => r && !seen.has(r.at) && seen.add(r.at)).sort((p, q) => q.at - p.at).slice(0, 30);
+    const h1 = { best: Math.max(x.best || 0, y.best || 0), attempts: Math.max(x.attempts || 0, y.attempts || 0), runs };
+    const latest = (x.lastAt || 0) >= (y.lastAt || 0) ? x : y;
+    if (latest.last != null) h1.last = latest.last;
+    if (latest.lastAt) h1.lastAt = latest.lastAt;
+    out[id] = h1;
+  }
+  return out;
+}
+const toCloudSet = s => JSON.parse(JSON.stringify({ title: s.title || '', questions: s.questions || [], createdAt: s.createdAt || 0, updatedAt: s.updatedAt || 0, sample: !!s.sample }));
+function fromCloudSet(id, d) {
+  const questions = (Array.isArray(d.questions) ? d.questions : []).filter(q => q && typeof q.question === 'string' && Array.isArray(q.options) && Array.isArray(q.answer));
+  return Object.assign({ id, title: String(d.title || 'Bộ đề chưa đặt tên'), questions, createdAt: d.createdAt || 0, updatedAt: d.updatedAt || 0 }, d.sample ? { sample: true } : {});
+}
+// Two-way merge: newest copy of each set wins, deletions win over older copies, history runs are unioned.
+async function syncNow() {
+  if (cloud.status !== 'in' || !fb) return;
+  if (syncing) { syncAgain = true; return; }
+  syncing = true; cloud.busy = true; updateChrome();
+  const { F, db } = fb, uid = cloud.user.uid;
+  const before = JSON.stringify([state.sets, state.history]);
+  try {
+    const setsCol = F.collection(db, 'users', uid, 'sets');
+    const histRef = F.doc(db, 'users', uid, 'meta', 'history');
+    const delRef = F.doc(db, 'users', uid, 'meta', 'deleted');
+    const [snap, hs, ds] = await Promise.all([F.getDocs(setsCol), F.getDoc(histRef), F.getDoc(delRef)]);
+    const remote = new Map(snap.docs.map(d => [d.id, fromCloudSet(d.id, d.data())]));
+    const rDeleted = ds.exists() ? (ds.data().ids || {}) : {};
+    const rHist = hs.exists() ? (hs.data().sets || {}) : {};
+
+    const deleted = Object.assign({}, rDeleted);
+    for (const [id, t] of Object.entries(state.deleted)) deleted[id] = Math.max(deleted[id] || 0, t);
+    const local = new Map(state.sets.map(s => [s.id, s]));
+    const merged = [];
+    for (const id of new Set([...local.keys(), ...remote.keys()])) {
+      const l = local.get(id), r = remote.get(id);
+      const pick = !l ? r : !r ? l : ((r.updatedAt || 0) > (l.updatedAt || 0) ? r : l);
+      if (deleted[id] && deleted[id] >= (pick.updatedAt || 0)) continue;
+      merged.push(pick);
+    }
+    merged.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    const hist = mergeHistory(state.history, rHist);
+    for (const id of Object.keys(hist)) if (deleted[id] && !merged.some(s => s.id === id)) delete hist[id];
+
+    state.sets = merged; state.history = hist; state.deleted = deleted;
+    saveLocal();
+
+    const writes = [];
+    for (const s of merged) { const r = remote.get(s.id); if (!r || (r.updatedAt || 0) !== (s.updatedAt || 0)) writes.push(b => b.set(F.doc(setsCol, s.id), toCloudSet(s))); }
+    for (const id of remote.keys()) if (!merged.some(s => s.id === id)) writes.push(b => b.delete(F.doc(setsCol, id)));
+    if (JSON.stringify(hist) !== JSON.stringify(rHist)) writes.push(b => b.set(histRef, { sets: JSON.parse(JSON.stringify(hist)) }));
+    if (JSON.stringify(deleted) !== JSON.stringify(rDeleted)) writes.push(b => b.set(delRef, { ids: deleted }));
+    for (let k = 0; k < writes.length; k += 400) {
+      const batch = F.writeBatch(db);
+      writes.slice(k, k + 400).forEach(w => w(batch));
+      await batch.commit();
+    }
+    cloud.lastSync = Date.now(); cloud.error = '';
+    lastSyncedSig = syncSig();
+  } catch (e) {
+    const big = e && /exceeds the maximum allowed size|larger than/i.test(e.message || '');
+    if (big) { cloud.error = 'Có bộ đề quá lớn để lưu lên mạng (giới hạn khoảng 1 MB mỗi bộ). Hãy tách thành nhiều bộ nhỏ hơn.'; toast(cloud.error, 6000, true); }
+    else cloudError(e);
+  } finally {
+    syncing = false; cloud.busy = false;
+    const changed = JSON.stringify([state.sets, state.history]) !== before;
+    if (changed && view.name !== 'play') refresh(); else updateChrome();
+    if (syncAgain) { syncAgain = false; scheduleSync(); }
+  }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && cloud.status === 'in' && Date.now() - cloud.lastSync > 60000 && view.name !== 'play') syncNow();
+});
+function accountChip() {
+  const u = cloud.user;
+  const dot = cloud.busy ? 'busy' : cloud.error ? 'err' : '';
+  const label = cloud.busy ? 'Đang đồng bộ…' : cloud.error ? 'Lỗi đồng bộ' : 'Đã đồng bộ';
+  const av = u.photo ? h('img', { src: u.photo, alt: '', referrerpolicy: 'no-referrer' }) : h('span', { class: 'av' }, (u.name || u.email || '?').trim().charAt(0).toUpperCase());
+  return h('button', { type: 'button', class: 'acct', onclick: openAccount, title: u.email }, av, h('span', { class: 'dot ' + dot }), h('span', { class: 'acct-l' }, label));
+}
+function openAccount() {
+  const u = cloud.user; if (!u) return;
+  const when = cloud.lastSync ? new Date(cloud.lastSync).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : 'chưa';
+  const close = openModal(
+    h('h2', null, 'Tài khoản'),
+    h('div', { class: 'stack', style: 'gap:4px' }, h('b', null, u.name || 'Không có tên'), h('span', { class: 'muted' }, u.email)),
+    h('p', { class: 'muted small' }, `Lần đồng bộ gần nhất: ${when}. Bộ đề và lịch sử làm bài được lưu lên mạng theo tài khoản này, đăng nhập ở máy khác là thấy.`),
+    cloud.error ? h('div', { class: 'note bad' }, h('span', null, cloud.error)) : null,
+    h('div', { class: 'row' },
+      btn('Đồng bộ ngay', () => { close(); syncNow(); }, 'primary'),
+      btn('Đăng xuất', () => { close(); signOutCloud(); }),
+      btn('Đóng', () => close(), 'ghost')),
+    h('p', { class: 'muted small' }, 'Đăng xuất không xóa dữ liệu trên máy này. Nếu đang dùng máy của người khác, hãy xóa bộ đề trước khi đăng xuất.'));
+}
+
+// One-time cleanup of LaTeX left in sets saved before this version.
+if (state.pendingClean) {
+  delete state.pendingClean;
+  let fixed = 0;
+  if (!state.latexCleaned) {
+    for (const set of state.sets) set.questions = set.questions.map(q => { const c = cleanQuestion(q); if (JSON.stringify(c) !== JSON.stringify(q)) fixed++; return c; });
+    state.latexCleaned = true;
+    save();
+  }
+  if (fixed) setTimeout(() => toast(`Đã dọn ký hiệu LaTeX trong ${fixed} câu hỏi đã lưu.`, 4000), 300);
+}
+render(true);
+initCloud();
+})();
+</script>
+</body>
+</html>
