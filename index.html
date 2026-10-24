@@ -322,6 +322,7 @@ table.runs tr:last-child td { border-bottom: 0; }
 .timer { position: absolute; left: 0; top: 0; height: 4px; width: 100%; background: var(--accent); transform-origin: left; }
 .timer.low { background: var(--bad); }
 .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.tiles.one { grid-template-columns: 1fr; }
 @media (max-width: 560px) { .tiles { grid-template-columns: 1fr; } }
 /* All answer tiles share one calm look; colour only appears for selected / right / wrong. */
 .tile { font: inherit; text-align: left; border: 1.5px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); padding: 16px 16px 16px 14px; min-height: 80px; display: flex; gap: 12px; align-items: center; cursor: pointer; font-size: 1rem; font-weight: 500;
@@ -351,7 +352,7 @@ table.runs tr:last-child td { border-bottom: 0; }
 .feedback.bad .fh { color: var(--bad); }
 .feedback .exp { white-space: pre-wrap; font-size: .93rem; }
 .kbd { font-size: .8rem; color: var(--muted); }
-.gain { position: absolute; right: 18px; top: 16px; font-weight: 700; font-size: 1.3rem; color: var(--ok); animation: pop .9s ease-out both; }
+.gain { position: absolute; right: 26px; top: 58px; font-weight: 700; font-size: 1.3rem; color: var(--ok); animation: pop .9s ease-out both; }
 @keyframes pop { 0% { transform: translateY(8px) scale(.8); opacity: 0; } 30% { transform: translateY(0) scale(1.1); opacity: 1; } 100% { transform: translateY(-6px) scale(1); opacity: 1; } }
 
 /* Result */
@@ -461,7 +462,8 @@ const RUNNING_FP = pageFingerprint(document, document.currentScript);
 let updateReady = false, newFp = '', checkingUpdate = false, lastUpdateCheck = 0; // see "Updates" at the end
 
 /* ---------- Prompt template for the AI ---------- */
-// Questions per AI reply: sets up to this size must be done in one go; longer ones are split into parts of this size.
+// Default questions per AI reply: sets up to this size must be done in one go; longer ones are split into parts of this size.
+// The prompt tells the AI that any count the user asks for ("150 câu vào 1 file") overrides this limit.
 const BATCH = 100;
 const PROMPT = `Đọc file đề đính kèm, chuyển TOÀN BỘ câu hỏi trắc nghiệm sang JSON theo đúng cấu trúc sau, rồi xuất kết quả ra một file .txt để tôi tải về (xem phần "Cách trả kết quả" ở cuối):
 
@@ -482,7 +484,7 @@ Quy tắc chung:
 1. Giữ nguyên nội dung câu hỏi và các lựa chọn, không sửa, không tóm tắt.
 2. Bỏ ký hiệu "A.", "B." ở đầu mỗi lựa chọn.
 3. Câu có nhiều đáp án đúng thì ghi đủ, ví dụ "answer": ["A", "C"].
-4. Giữ đúng thứ tự câu như trong đề.
+4. Giữ đúng thứ tự câu như trong đề. Câu chỉ có MỘT lựa chọn (câu ghi nhớ, đề chỉ cho sẵn đáp án) vẫn phải giữ, không được bỏ: ghi lựa chọn đó vào "options" và "answer": ["A"].
 
 Về đáp án:
 5. Nếu đề CÓ đáp án cho câu đó (khoanh, in đậm, gạch chân, tô màu, bảng đáp án cuối đề…): dùng đúng đáp án của đề và ghi "aiAnswer": false. Phần "explanation" chép lời giải của đề nếu có, không có thì để rỗng.
@@ -496,15 +498,17 @@ Về đáp án:
 
 Phạm vi và độ dài:
 11. Mặc định phải làm TẤT CẢ các câu có trong đề, không bỏ câu nào, không viết "...", không ghi kiểu "các câu còn lại tương tự". Chỉ khi tôi ghi rõ phạm vi (ví dụ "chỉ làm câu 1–50") thì mới làm đúng phần đó, và vẫn phải làm hết phần đó.
-12. Đề có từ ${BATCH} câu trở xuống: BẮT BUỘC làm hết trong MỘT lần trả lời. Không được dừng giữa chừng, không được hỏi có muốn làm tiếp không, không được hẹn làm tiếp.
-13. Đề có hơn ${BATCH} câu: chia thành từng phần ĐÚNG ${BATCH} câu (câu 1–${BATCH}, ${BATCH + 1}–${BATCH * 2}…, phần cuối là số câu còn lại). Mỗi lần trả lời làm trọn một phần, không dừng sớm hơn. Cuối phần đó đóng JSON đúng cú pháp, rồi ghi một dòng "Còn tiếp: đã làm đến câu N". Khi tôi nhắn "Làm tiếp", làm phần kế tiếp từ câu N+1 với đúng quy tắc trên. Phần cuối cùng thì không ghi dòng "Còn tiếp".
-14. Sau khối JSON, ghi một dòng: "Tổng: X câu (đề có T câu), trong đó Y câu tự giải" (X là số câu có trong lần trả lời này, T là tổng số câu của cả đề).
+12. YÊU CẦU CỦA TÔI VỀ SỐ CÂU LUÔN ĐƯỢC ƯU TIÊN. Nếu trong tin nhắn tôi có ghi số câu cho mỗi file hoặc mỗi lần trả lời (ví dụ "làm hết 150 câu vào 1 file", "không chia phần", "mỗi file 200 câu"), hãy làm đúng yêu cầu đó và BỎ QUA hoàn toàn giới hạn ${BATCH} câu ở quy tắc 13–14. Không tự ý chia nhỏ hơn số tôi yêu cầu, không tách thành nhiều file rời.
+13. Khi tôi KHÔNG ghi yêu cầu nào về số câu và đề có từ ${BATCH} câu trở xuống: BẮT BUỘC làm hết trong MỘT lần trả lời. Không được dừng giữa chừng, không được hỏi có muốn làm tiếp không, không được hẹn làm tiếp.
+14. Khi tôi KHÔNG ghi yêu cầu nào về số câu và đề có hơn ${BATCH} câu: chia thành từng phần ĐÚNG ${BATCH} câu (câu 1–${BATCH}, ${BATCH + 1}–${BATCH * 2}…, phần cuối là số câu còn lại). Mỗi lần trả lời làm trọn một phần, không dừng sớm hơn. Cuối phần đó đóng JSON đúng cú pháp, rồi ghi một dòng "Còn tiếp: đã làm đến câu N". Khi tôi nhắn "Làm tiếp", làm phần kế tiếp từ câu N+1 với đúng quy tắc trên. Phần cuối cùng thì không ghi dòng "Còn tiếp".
+15. Nếu tôi yêu cầu nhiều câu trong MỘT file mà một lần trả lời không đủ chỗ: vẫn giữ đúng MỘT file. Làm được đến đâu ghi vào file đến đó và báo "Còn tiếp: đã làm đến câu N"; khi tôi nhắn "Làm tiếp" thì viết tiếp vào CHÍNH file đó (không tạo file mới) cho đến khi file chứa đủ tất cả các câu trong MỘT khối JSON duy nhất. Khi đã đủ thì bỏ dòng "Còn tiếp" khỏi file.
+16. Sau khối JSON, ghi một dòng: "Tổng: X câu (đề có T câu), trong đó Y câu tự giải" (X là số câu có trong file này, T là tổng số câu của cả đề).
 
 Cách trả kết quả:
-15. Không in JSON ra khung chat. Hãy tạo MỘT file .txt để tôi tải về, tên file viết không dấu theo tên bộ đề (ví dụ "De-giua-ky-Tin-hoc.txt"). Nếu đề được chia phần thì mỗi phần một file, thêm "-phan-2", "-phan-3"… vào tên.
-16. Nội dung file gồm khối JSON, rồi đến dòng "Tổng: …" và dòng "Còn tiếp: …" (nếu có) theo quy tắc 13–14. Không thêm định dạng markdown hay chữ nào khác. Lưu file dạng UTF-8 để giữ đúng dấu tiếng Việt.
-17. Trong khung chat chỉ ghi link tải file và dòng "Tổng: …".
-18. Nếu không tạo được file, hãy trả toàn bộ nội dung đó trong MỘT khối code duy nhất để tôi tự sao chép.`;
+17. Không in JSON ra khung chat. Hãy tạo MỘT file .txt để tôi tải về, tên file viết không dấu theo tên bộ đề (ví dụ "De-giua-ky-Tin-hoc.txt"). Chỉ khi đề được chia phần (theo quy tắc 14, hoặc theo số câu mỗi file tôi yêu cầu) thì mới mỗi phần một file, thêm "-phan-2", "-phan-3"… vào tên.
+18. Nội dung file gồm khối JSON, rồi đến dòng "Tổng: …" và dòng "Còn tiếp: …" (nếu có) theo quy tắc 14–16. Không thêm định dạng markdown hay chữ nào khác. Lưu file dạng UTF-8 để giữ đúng dấu tiếng Việt.
+19. Trong khung chat chỉ ghi link tải file và dòng "Tổng: …".
+20. Nếu không tạo được file, hãy trả toàn bộ nội dung đó trong MỘT khối code duy nhất để tôi tự sao chép.`;
 
 /* ---------- Example set (shown until the user deletes it) ---------- */
 const SAMPLE = {
@@ -610,7 +614,7 @@ function toast(msg, ms = 2600, urgent = false) {
   const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), ms); }
 function uid() { return 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
-const playable = q => q && q.question && q.options.length >= 2 && q.answer.length > 0;
+const playable = q => q && q.question && q.options.length >= 1 && q.answer.length > 0; // one option = a memory card
 
 /* ---------- Per-question stats, for "câu hay sai" ---------- */
 // Saved in state.history[setId].qs as { key: { n: tries, w: wrong, s: right-in-a-row, t: last time } }.
@@ -776,10 +780,18 @@ function normQuestionRaw(q) {
   if (!Array.isArray(opts)) opts = [];
   opts = opts.map(o => String(o ?? '').trim()).filter(o => o !== '');
   if (opts.length && opts.every((o, j) => new RegExp('^' + LETTERS[j] + '\\s*[.):]\\s*', 'i').test(o))) opts = opts.map(o => o.replace(/^[A-Za-z]\s*[.):]\s*/, ''));
-  const ans = normAnswer(q.answer ?? q.answers ?? q.correct ?? q.dapAn, opts.length);
+  let rawAns = q.answer ?? q.answers ?? q.correct ?? q.dapAn;
+  // No options but the answer written out as text: that text becomes the one option to remember.
+  if (!opts.length) {
+    const t = (Array.isArray(rawAns) ? rawAns : [rawAns]).map(x => String(x ?? '').trim()).filter(x => x && !/^[A-Za-z]$/.test(x));
+    if (t.length) { opts = [t.join(', ')]; rawAns = ['A']; }
+  }
+  let ans = normAnswer(rawAns, opts.length);
+  // A question with a single option is a memory card: that option is the answer.
+  if (opts.length === 1 && !ans.letters.length) ans = { letters: ['A'], bad: [] };
   const problems = [];
   if (!text) problems.push('thiếu nội dung câu hỏi');
-  if (opts.length < 2) problems.push('ít hơn 2 lựa chọn');
+  if (!opts.length) problems.push('không có lựa chọn nào');
   return {
     q: Object.assign({ question: text, options: opts, answer: ans.letters, explanation: String(q.explanation ?? q.giaiThich ?? q.explain ?? '').trim() },
       (q.aiAnswer === true || q.aiAnswer === 'true') && ans.letters.length ? { aiAnswer: true } : {}),
@@ -1244,7 +1256,7 @@ function importResultPanel(r) {
   if (r.badAnswer.length) notes.push(h('div', { class: 'note warn' }, h('b', null, `${r.badAnswer.length} câu có đáp án không hợp lệ (sẽ coi như thiếu đáp án)`), h('ul', null, r.badAnswer.slice(0, 15).map(s => h('li', null, s)))));
   const list30 = a => a.slice(0, 30).join(', ') + (a.length > 30 ? '…' : '');
   if (r.more) {
-    const ask = `Làm tiếp phần kế tiếp, bắt đầu từ câu ${r.more + 1}, đủ ${BATCH} câu (hoặc đến hết đề nếu còn ít hơn), theo đúng cấu trúc JSON và các quy tắc ở trên. Xuất ra file .txt như lần trước.`;
+    const ask = `Làm tiếp từ câu ${r.more + 1}, theo đúng cấu trúc JSON, các quy tắc ở trên và yêu cầu về số câu tôi đã đưa ra lúc đầu (nếu không có yêu cầu nào thì làm đủ ${BATCH} câu, hoặc đến hết đề nếu còn ít hơn). Xuất ra file .txt như lần trước.`;
     notes.push(h('div', { class: 'note warn' },
       h('b', null, `AI mới làm đến câu ${r.more}, đề vẫn còn tiếp`),
       h('span', null, 'Lưu phần này trước. Sau đó nhắn AI câu bên dưới, dán kết quả vào "Thêm bộ đề" và chọn "Thêm vào bộ đề có sẵn" để nối vào.'),
@@ -1325,8 +1337,9 @@ function openEdit(ref, qi, after) {
     const options = fO.value.split('\n').map(s => s.trim()).filter(Boolean);
     const ans = normAnswer(fA.value, options.length);
     if (!fQ.value.trim()) { err.textContent = 'Câu hỏi đang trống.'; return; }
-    if (options.length < 2) { err.textContent = 'Cần ít nhất 2 lựa chọn, mỗi dòng một lựa chọn.'; return; }
-    if (ans.bad.length) { err.textContent = `Đáp án "${ans.bad.join(', ')}" không khớp lựa chọn nào. Có ${options.length} lựa chọn: A–${LETTERS[options.length - 1]}.`; return; }
+    if (!options.length) { err.textContent = 'Cần ít nhất 1 lựa chọn, mỗi dòng một lựa chọn.'; return; }
+    if (ans.bad.length) { err.textContent = `Đáp án "${ans.bad.join(', ')}" không khớp lựa chọn nào. ` + (options.length === 1 ? 'Chỉ có 1 lựa chọn: A.' : `Có ${options.length} lựa chọn: A–${LETTERS[options.length - 1]}.`); return; }
+    if (options.length === 1 && !ans.letters.length) ans.letters = ['A']; // a memory card: its one option is the answer
     set.questions[qi] = { question: fQ.value.trim(), options, answer: ans.letters, explanation: fE.value.trim() }; // saving by hand counts as checked, so the AI mark goes away
     saveBtn.disabled = true;
     persist(ref, set); close(); toast('Đã lưu câu hỏi'); after && after();
@@ -1590,7 +1603,8 @@ function viewPlay() {
 
   const practiceClock = p.mode === 'practice' && p.timer;
   const timerBar = practiceClock && !graded ? h('div', { class: 'timer', id: 'timerBar', style: `transform:scaleX(${it.left / (p.timer * 1000)})` }) : null;
-  const hint = p.mode === 'test'
+  const single = it.order.length === 1; // a memory card: one option, which is the answer
+  const hint = single ? 'Câu ghi nhớ · đọc rồi bấm vào đáp án' : p.mode === 'test'
     ? (it.multi ? 'Chọn TẤT CẢ đáp án đúng · đổi được đến khi nộp bài' : 'Chọn 1 đáp án · đổi được đến khi nộp bài')
     : (it.multi ? 'Chọn TẤT CẢ đáp án đúng rồi bấm Xác nhận' : 'Chọn 1 đáp án');
   const card = h('div', { class: 'qcard' }, timerBar,
@@ -1600,7 +1614,7 @@ function viewPlay() {
 
   const correctOrig = it.q.answer.map(letterIdx);
   const chosenOrig = [...it.sel].map(d => it.order[d]);
-  const tiles = h('div', { class: 'tiles' }, it.order.map((orig, d) => {
+  const tiles = h('div', { class: 'tiles' + (single ? ' one' : '') }, it.order.map((orig, d) => {
     let cls = 'tile';
     if (graded) {
       if (correctOrig.includes(orig)) cls += ' is-correct';
@@ -1635,7 +1649,7 @@ function viewPlay() {
     main,
     h('button', { type: 'button', class: 'btn big', disabled: p.i === n - 1, onclick: () => goTo(p.i + 1) }, 'Câu sau →')));
   if (graded && canEdit(p.ref)) parts.push(h('div', { class: 'row' }, btn('Báo sai / sửa câu này', () => openEdit(p.ref, it.qi, () => toast('Đã lưu. Thay đổi áp dụng từ lần làm sau.')), 'ghost')));
-  if (!graded && !it.multi) parts.push(h('span', { class: 'kbd' }, `Mẹo: phím 1–${it.order.length} hoặc A–${LETTERS[it.order.length - 1]} để chọn, ← → để chuyển câu`));
+  if (!graded && !it.multi) parts.push(h('span', { class: 'kbd' }, single ? 'Mẹo: phím 1 hoặc A để chọn, ← → để chuyển câu' : `Mẹo: phím 1–${it.order.length} hoặc A–${LETTERS[it.order.length - 1]} để chọn, ← → để chuyển câu`));
 
   const root = h('div', { class: 'playgrid' }, h('div', { class: 'play' }, parts), summaryPanel(p));
   if (!p.finished && ((p.mode === 'test' && p.testDeadline) || (practiceClock && !graded))) startTick();
