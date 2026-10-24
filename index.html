@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Ôn Đề Quiz</title>
+<title>Memora</title>
 <meta name="description" content="Biến bộ đề trắc nghiệm thành bài quiz kiểu Quizizz: ôn tập, kiểm tra, lưu lịch sử và đồng bộ bằng tài khoản Google.">
 <meta name="theme-color" content="#EEF1F6" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0E131B" media="(prefers-color-scheme: dark)">
@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Ôn Đề">
+<meta name="apple-mobile-web-app-title" content="Memora">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='12' height='12' rx='3' fill='%233456DB'/%3E%3Crect x='17' y='3' width='12' height='12' rx='3' fill='%230B8577'/%3E%3Crect x='3' y='17' width='12' height='12' rx='3' fill='%23B76A00'/%3E%3Crect x='17' y='17' width='12' height='12' rx='3' fill='%23BC2F7A'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -266,7 +266,7 @@ table.runs tr:last-child td { border-bottom: 0; }
   <header class="top">
     <button class="brand" id="brandBtn" type="button" aria-label="Về thư viện">
       <span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-      <b>Ôn Đề</b>
+      <b>Memora</b>
     </button>
     <nav class="row" id="topNav"></nav>
   </header>
@@ -338,7 +338,7 @@ const SAMPLE = {
 };
 
 /* ---------- Local storage (this browser only) ---------- */
-const LS_KEY = 'onde-quiz.v1';
+const LS_KEY = 'onde-quiz.v1'; // keep the old name (app was "Ôn Đề Quiz"): changing it would hide everyone's saved sets
 function loadState() {
   try { const s = JSON.parse(localStorage.getItem(LS_KEY)); if (s && Array.isArray(s.sets)) return s; } catch (e) {}
   return null;
@@ -639,10 +639,10 @@ function downloadSet(set) { saveFile(slug(set.title) + '.json', setJson(set), '�
 
 /* ---------- Backup and restore of everything on this browser ---------- */
 function backupText() { return JSON.stringify({ app: 'onde-quiz', version: 1, exportedAt: new Date().toISOString(), sets: state.sets, history: state.history }, null, 1); }
-function downloadBackup() { saveFile('on-de-sao-luu-' + today() + '.json', backupText(), 'Đã sao chép bản sao lưu. Dán vào một file ghi chú và cất đi.'); }
+function downloadBackup() { saveFile('memora-sao-luu-' + today() + '.json', backupText(), 'Đã sao chép bản sao lưu. Dán vào một file ghi chú và cất đi.'); }
 function restoreBackup(text) {
   const raw = extractJson(text);
-  if (!raw || !Array.isArray(raw.sets)) throw new Error('Đây không phải file sao lưu của Ôn Đề. Nếu là một bộ đề, hãy dùng "Thêm bộ đề".');
+  if (!raw || !Array.isArray(raw.sets)) throw new Error('Đây không phải file sao lưu của Memora. Nếu là một bộ đề, hãy dùng "Thêm bộ đề".');
   let added = 0, updated = 0;
   for (const s of raw.sets) {
     if (!s || !s.id || !Array.isArray(s.questions)) continue;
@@ -722,7 +722,7 @@ const isStandalone = () => matchMedia('(display-mode: standalone)').matches || n
 const showInstallCard = () => !isStandalone() && !state.settings.hideInstall && (installEvt || isMobile);
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; updateChrome(); });
 const markInstalled = () => { installEvt = null; state.settings.hideInstall = true; save(); updateChrome(); };
-window.addEventListener('appinstalled', () => { markInstalled(); toast('Đã cài xong. Mở "Ôn Đề" từ màn hình chính.', 4000); });
+window.addEventListener('appinstalled', () => { markInstalled(); toast('Đã cài xong. Mở "Memora" từ màn hình chính.', 4000); });
 async function installApp() {
   if (installEvt) {
     const e = installEvt;
@@ -750,14 +750,14 @@ function openInstallHelp() {
     body = [steps(
       'Bấm nút Chia sẻ (ô vuông có mũi tên chỉ lên) ở thanh dưới hoặc trên cùng của Safari.',
       'Kéo xuống, chọn "Thêm vào MH chính".',
-      'Bấm "Thêm" ở góc trên bên phải. Biểu tượng Ôn Đề sẽ hiện trên màn hình chính.'),
+      'Bấm "Thêm" ở góc trên bên phải. Biểu tượng Memora sẽ hiện trên màn hình chính.'),
       h('p', { class: 'muted small' }, 'Không thấy mục này? Hãy mở trang bằng Safari. Trên iOS cũ, Chrome chưa hỗ trợ thêm vào màn hình chính.')];
   } else {
     title = 'Cài lên điện thoại';
     body = [steps(
       'Bấm nút ⋮ ở góc trên bên phải của Chrome.',
       'Chọn "Cài đặt ứng dụng" hoặc "Thêm vào màn hình chính".',
-      'Bấm "Cài đặt". Biểu tượng Ôn Đề sẽ hiện trên màn hình chính.'),
+      'Bấm "Cài đặt". Biểu tượng Memora sẽ hiện trên màn hình chính.'),
       h('p', { class: 'muted small' }, 'Không thấy mục này? Hãy mở trang bằng Chrome, rồi tải lại trang một lần. Nếu app đã được cài rồi thì Chrome sẽ hiện "Mở ứng dụng" thay vì "Cài đặt".')];
   }
   const close = openModal(h('h2', null, title), ...body, h('div', { class: 'row' }, btn('Đã hiểu', () => close(), 'primary')));
@@ -806,7 +806,7 @@ function viewHome() {
     h('b', null, 'Trình duyệt này đang không cho lưu dữ liệu'),
     h('span', null, 'Có thể bạn đang ở chế độ ẩn danh, hoặc bộ nhớ đã đầy. Bộ đề và lịch sử sẽ mất khi đóng trang. Hãy tải bản sao lưu ở cuối trang, hoặc mở lại bằng cửa sổ thường.')));
   if (showInstallCard()) parts.push(h('div', { class: 'note ok' },
-    h('b', null, isMobile ? 'Cài Ôn Đề lên điện thoại' : 'Cài Ôn Đề lên máy'),
+    h('b', null, isMobile ? 'Cài Memora lên điện thoại' : 'Cài Memora lên máy'),
     h('span', null, 'Mở nhanh từ màn hình chính như một app, toàn màn hình, mất mạng vẫn làm bài được.'),
     h('div', { class: 'row', style: 'margin-top:6px' },
       btn('Cài app', installApp, 'primary'),

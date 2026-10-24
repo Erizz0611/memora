@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "Ôn Đề Quiz",
-  "short_name": "Ôn Đề",
+  "name": "Memora",
+  "short_name": "Memora",
   "description": "Biến bộ đề trắc nghiệm thành bài quiz để ôn thi: ôn tập, kiểm tra, lưu lịch sử và đồng bộ bằng tài khoản Google.",
   "lang": "vi",
   "start_url": "./",

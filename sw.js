@@ -1,7 +1,7 @@
 // Service worker: lets phones install the app, and opens it offline from the last saved copy.
 // Network first, so a new version on GitHub shows up as soon as there is a connection.
 // Only same-origin files are handled; Firebase, Google login and fonts go straight to the network.
-const CACHE = 'on-de-quiz-v1';
+const CACHE = 'memora-v1';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
