@@ -291,7 +291,10 @@ table.runs tr:last-child td { border-bottom: 0; }
   <main id="main"></main>
   <footer class="credit">
     <div>Developed by Hminh <span class="heart" aria-label="với tình yêu">♥</span></div>
-    <button class="linkbtn" id="checkUpdateBtn" type="button">Kiểm tra cập nhật</button>
+    <div class="row" style="justify-content:center;gap:4px">
+      <button class="linkbtn" id="installLink" type="button" hidden>Cài app</button>
+      <button class="linkbtn" id="checkUpdateBtn" type="button">Kiểm tra cập nhật</button>
+    </div>
   </footer>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
@@ -767,6 +770,7 @@ function refresh() { render(false); }
 function renderNav() {
   document.getElementById('backBtn').hidden = view.name === 'home' || view.name === 'play'; // the quiz has its own "Thoát"
   document.getElementById('updateBar').hidden = !updateReady || view.name === 'play'; // never interrupt a quiz
+  document.getElementById('installLink').hidden = !canInstall(); // always reachable, even after "Để sau" or a reinstall
   $nav.replaceChildren();
   if (view.name === 'play') return;
   if (cloud.status === 'in') $nav.append(accountChip());
@@ -785,6 +789,7 @@ function render(scrollTop) {
 }
 document.getElementById('brandBtn').addEventListener('click', () => { if (view.name !== 'play') go('home'); });
 document.getElementById('backBtn').addEventListener('click', goBack);
+document.getElementById('installLink').addEventListener('click', () => installApp());
 
 /* ---------- Install to home screen ---------- */
 // Android Chrome / Edge hand us a ready install prompt; iPhone and in-app browsers (Zalo, Messenger…) don't, so we explain the steps.
@@ -794,9 +799,13 @@ const isIOS = /iPhone|iPad|iPod/.test(UA) || (navigator.platform === 'MacIntel' 
 const isMobile = isIOS || /Android|Mobi/i.test(UA);
 const isInApp = /FBAN|FBAV|FB_IAB|FBIOS|Messenger|Zalo|Instagram|Line\/|TikTok|musical_ly/i.test(UA);
 const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-const showInstallCard = () => !isStandalone() && !state.settings.hideInstall && (installEvt || isMobile);
+// installLater: the user tapped "Để sau". installedAt: we saw it get installed. Neither is permanent proof:
+// if Chrome offers the install prompt again (installEvt), the app was removed, so the card comes back.
+// (The old "hideInstall" flag mixed both meanings and is ignored.)
+const canInstall = () => !isStandalone() && (installEvt || isMobile);
+const showInstallCard = () => canInstall() && !state.settings.installLater && (installEvt || !state.settings.installedAt);
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; updateChrome(); });
-const markInstalled = () => { installEvt = null; state.settings.hideInstall = true; save(); updateChrome(); };
+const markInstalled = () => { installEvt = null; state.settings.installedAt = Date.now(); save(); updateChrome(); };
 window.addEventListener('appinstalled', () => { markInstalled(); toast('Đã cài xong. Mở "Memora" từ màn hình chính.', 4000); });
 async function installApp() {
   if (installEvt) {
@@ -833,7 +842,8 @@ function openInstallHelp() {
       'Bấm nút ⋮ ở góc trên bên phải của Chrome.',
       'Chọn "Cài đặt ứng dụng" hoặc "Thêm vào màn hình chính".',
       'Bấm "Cài đặt". Biểu tượng Memora sẽ hiện trên màn hình chính.'),
-      h('p', { class: 'muted small' }, 'Không thấy mục này? Hãy mở trang bằng Chrome, rồi tải lại trang một lần. Nếu app đã được cài rồi thì Chrome sẽ hiện "Mở ứng dụng" thay vì "Cài đặt".')];
+      h('p', { class: 'muted small' }, 'Không thấy mục này? Hãy mở trang bằng Chrome, rồi tải lại trang một lần. Nếu app đã được cài rồi thì Chrome sẽ hiện "Mở ứng dụng" thay vì "Cài đặt".'),
+      h('p', { class: 'muted small' }, 'Vừa xóa app xong mà Chrome vẫn hiện "Mở ứng dụng"? Chrome cần vài phút để biết app đã bị xóa. Hãy đóng hẳn Chrome, mở lại trang rồi thử lại.')];
   }
   const close = openModal(h('h2', null, title), ...body, h('div', { class: 'row' }, btn('Đã hiểu', () => close(), 'primary')));
 }
@@ -885,7 +895,7 @@ function viewHome() {
     h('span', null, 'Mở nhanh từ màn hình chính như một app, toàn màn hình, mất mạng vẫn làm bài được.'),
     h('div', { class: 'row', style: 'margin-top:6px' },
       btn('Cài app', installApp, 'primary'),
-      btn('Để sau', () => { state.settings.hideInstall = true; save(); refresh(); }, 'ghost'))));
+      btn('Để sau', () => { state.settings.installLater = true; save(); refresh(); toast('Muốn cài sau thì bấm "Cài app" ở cuối trang.', 3500); }, 'ghost'))));
   parts.push(hero);
   if (cloud.status === 'out') parts.push(h('div', { class: 'note ai' },
     h('b', null, 'Đăng nhập để không mất bộ đề khi đổi máy'),
