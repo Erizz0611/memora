@@ -493,8 +493,15 @@ Quy tắc chung:
 3. Câu có nhiều đáp án đúng thì ghi đủ, ví dụ "answer": ["A", "C"].
 4. Giữ đúng thứ tự câu như trong đề. Câu chỉ có MỘT lựa chọn (câu ghi nhớ, đề chỉ cho sẵn đáp án) vẫn phải giữ, không được bỏ: ghi lựa chọn đó vào "options" và "answer": ["A"].
 
+QUAN TRỌNG – tìm đáp án có sẵn trong đề TRƯỚC khi tự giải:
+- Đề thường đánh dấu đáp án đúng bằng ĐỊNH DẠNG chứ không ghi chữ "Đáp án": chữ MÀU KHÁC (đỏ, xanh…), IN ĐẬM, in nghiêng, gạch chân, tô nền/highlight, khoanh tròn, dấu ✓ hoặc *, hoặc một bảng đáp án ở cuối đề/cuối mỗi phần. Trong một câu, lựa chọn nào có định dạng khác các lựa chọn còn lại thì đó là đáp án của đề.
+- Phải xem cả định dạng, không chỉ đọc chữ. Với PDF hoặc ảnh: nhìn trực tiếp hình ảnh từng trang để thấy màu chữ và chữ đậm. Nếu chạy được code: với PDF dùng PyMuPDF đọc màu và font của từng đoạn chữ (font có "Bold" là chữ đậm), với Word dùng python-docx đọc run.font.color, run.bold, run.underline, highlight.
+- Trước khi viết kết quả, xem kỹ 5–10 câu đầu: nếu mỗi câu có một lựa chọn khác màu hoặc khác độ đậm, thì cả đề đánh dấu đáp án theo cách đó.
+- KIỂM TRA LẠI khi phải tự giải nhiều: nếu số câu tự giải ("aiAnswer": true) vượt quá 20% số câu, hoặc bạn sắp kết luận "đề không có đáp án", hãy DỪNG LẠI và rà lại toàn bộ đề theo các dấu hiệu trên trước khi xuất file. Đề có đáp án mà ghi là tự giải là lỗi nghiêm trọng.
+- Nếu đã rà lại mà vẫn không thấy được màu chữ hay chữ đậm (ví dụ chỉ đọc được chữ thô), vẫn làm theo quy tắc 6 nhưng ghi ở đầu khung chat: "Không đọc được định dạng (màu chữ, in đậm) của file, các đáp án là tự giải. Nên gửi ảnh chụp các trang đề."
+
 Về đáp án:
-5. Nếu đề CÓ đáp án cho câu đó (khoanh, in đậm, gạch chân, tô màu, bảng đáp án cuối đề…): dùng đúng đáp án của đề và ghi "aiAnswer": false. Phần "explanation" chép lời giải của đề nếu có, không có thì để rỗng.
+5. Nếu đề CÓ đáp án cho câu đó (chữ màu khác, in đậm, gạch chân, tô nền, khoanh, bảng đáp án cuối đề…): dùng đúng đáp án của đề và ghi "aiAnswer": false. Phần "explanation" chép lời giải của đề nếu có, không có thì để rỗng.
 6. Nếu đề KHÔNG có đáp án cho câu đó: tự giải để chọn đáp án đúng nhất, ghi "aiAnswer": true, và viết "explanation" ngắn gọn (1–3 câu) nói vì sao chọn đáp án đó.
 7. Nếu tự giải mà không chắc chắn, vẫn chọn đáp án hợp lý nhất nhưng mở đầu phần giải thích bằng "[Không chắc chắn]".
 8. Không bao giờ đổi đáp án mà đề đã cho. Nếu thấy đáp án của đề có vẻ sai, giữ nguyên và mở đầu phần giải thích bằng "[Nghi đề sai]" kèm lý do.
@@ -514,7 +521,7 @@ Phạm vi và độ dài:
 Cách trả kết quả:
 17. Không in JSON ra khung chat. Hãy tạo MỘT file .txt để tôi tải về, tên file viết không dấu theo tên bộ đề (ví dụ "De-giua-ky-Tin-hoc.txt"). Chỉ khi đề được chia phần (theo quy tắc 14, hoặc theo số câu mỗi file tôi yêu cầu) thì mới mỗi phần một file, thêm "-phan-2", "-phan-3"… vào tên.
 18. Nội dung file gồm khối JSON, rồi đến dòng "Tổng: …" và dòng "Còn tiếp: …" (nếu có) theo quy tắc 14–16. Không thêm định dạng markdown hay chữ nào khác. Lưu file dạng UTF-8 để giữ đúng dấu tiếng Việt.
-19. Trong khung chat chỉ ghi link tải file và dòng "Tổng: …".
+19. Trong khung chat chỉ ghi link tải file và dòng "Tổng: …" (cùng dòng cảnh báo không đọc được định dạng ở trên, nếu có).
 20. Nếu không tạo được file, hãy trả toàn bộ nội dung đó trong MỘT khối code duy nhất để tôi tự sao chép.`;
 
 /* ---------- Example set (shown until the user deletes it) ---------- */
@@ -1347,6 +1354,7 @@ function viewImport() {
       h('p', null, 'Sao chép prompt, dán vào ChatGPT, Claude hoặc Gemini cùng file đề.'),
       h('div', { class: 'row' }, btn('Sao chép prompt', () => copyText(PROMPT, 'Đã sao chép prompt. AI sẽ trả về file .txt để bạn chọn ở ô "Kết quả AI trả về".'), 'soft')),
       h('p', { class: 'muted small' }, 'ChatGPT và Claude tạo được file .txt. AI nào không tạo được file sẽ trả về một khối code: sao chép rồi dán vào ô bên cạnh.'),
+      h('p', { class: 'muted small' }, h('b', null, 'Đề có đáp án tô màu hoặc in đậm? '), 'Gửi file dạng PDF (Word: File → Save As → PDF) thay vì .docx, và ghi thêm một câu khi gửi, ví dụ: "Đáp án đúng là chữ màu đỏ". Nếu AI vẫn báo tự giải gần hết, hãy gửi ảnh chụp các trang đề.'),
       h('details', { class: 'prompt' }, h('summary', null, 'Xem nội dung prompt'), h('pre', null, PROMPT))),
     h('section', { class: 'panel' },
       h('h2', null, 'Kết quả AI trả về'),
@@ -1376,6 +1384,14 @@ function importResultPanel(r) {
       h('b', null, `AI mới làm đến câu ${r.more}, đề vẫn còn tiếp`),
       h('span', null, 'Lưu phần này trước. Sau đó nhắn AI câu bên dưới, dán kết quả vào "Thêm bộ đề" và chọn "Thêm vào bộ đề có sẵn" để nối vào.'),
       h('div', { class: 'row', style: 'margin-top:6px' }, btn('Sao chép câu nhắn "Làm tiếp"', () => copyText(ask, 'Đã sao chép. Dán vào AI để làm tiếp.')))));
+  }
+  // Most answers "self-solved" usually means the AI missed answers marked by colour/bold, not that the paper has none.
+  if (r.aiSolved.length >= 5 && r.aiSolved.length / Math.max(1, r.rawCount) > 0.5) {
+    const recheck = 'Bạn đang ghi gần hết các câu là tự giải. Hãy kiểm tra lại: đề có đánh dấu đáp án đúng bằng chữ màu khác (ví dụ màu đỏ), in đậm, gạch chân hoặc tô nền không? Nếu có, làm lại toàn bộ với đáp án của đề và ghi "aiAnswer": false, theo đúng cấu trúc JSON và các quy tắc ở trên.';
+    notes.push(h('div', { class: 'note warn' },
+      h('b', null, `AI tự giải ${r.aiSolved.length}/${r.rawCount} câu. Có thể AI đã không thấy đáp án trong đề`),
+      h('span', null, 'Nếu đề có đáp án tô màu hoặc in đậm, AI thường bỏ sót vì chỉ đọc chữ. Chưa nên lưu: nhắn AI câu bên dưới, hoặc gửi lại đề dạng PDF hay ảnh chụp các trang, kèm câu "Đáp án đúng là chữ màu đỏ" (đổi theo đề của bạn).'),
+      h('div', { class: 'row', style: 'margin-top:6px' }, btn('Sao chép câu nhắn kiểm tra lại', () => copyText(recheck, 'Đã sao chép. Dán vào AI để nó kiểm tra lại đáp án.')))));
   }
   if (r.aiSolved.length) notes.push(h('div', { class: 'note ai' }, h('b', null, `${r.aiSolved.length} câu đề không có đáp án, AI đã tự giải`), h('span', null, `Câu số ${list30(r.aiSolved)}. Các câu này được đánh dấu "AI giải" trong app. Nên dò lại, nhất là các câu AI ghi không chắc chắn.`)));
   if (r.unsure.length) notes.push(h('div', { class: 'note warn' }, h('b', null, `${r.unsure.length} câu AI không chắc chắn`), h('span', null, `Câu số ${list30(r.unsure)}. Kiểm tra lại đáp án các câu này trước khi ôn.`)));
