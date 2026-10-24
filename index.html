@@ -5,7 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ôn Đề Quiz</title>
 <meta name="description" content="Biến bộ đề trắc nghiệm thành bài quiz kiểu Quizizz: ôn tập, kiểm tra, lưu lịch sử và đồng bộ bằng tài khoản Google.">
-<meta name="theme-color" content="#2D4FD6">
+<meta name="theme-color" content="#EEF1F6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E131B" media="(prefers-color-scheme: dark)">
+<!-- Install to home screen: opens full screen with its own icon -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ôn Đề">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='12' height='12' rx='3' fill='%233456DB'/%3E%3Crect x='17' y='3' width='12' height='12' rx='3' fill='%230B8577'/%3E%3Crect x='3' y='17' width='12' height='12' rx='3' fill='%23B76A00'/%3E%3Crect x='17' y='17' width='12' height='12' rx='3' fill='%23BC2F7A'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1413,6 +1421,9 @@ if (state.pendingClean) {
 }
 render(true);
 initCloud();
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
 })();
 </script>
 </body>
