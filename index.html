@@ -287,6 +287,13 @@ table.runs tr:last-child td { border-bottom: 0; }
 .hchart .plot i.low { background: var(--bad); }
 
 /* Danger zone */
+.guide-toc { display: flex; flex-wrap: wrap; gap: 8px; }
+.guide-sec { display: flex; flex-direction: column; gap: 12px; scroll-margin-top: 24px; }
+@media (max-width: 1023px) { .guide-sec { scroll-margin-top: 76px; } }
+.guide-sec > * { max-width: 76ch; }
+.guide-sec h3 { margin-top: 6px; }
+.gl { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.gl li::marker { color: var(--muted); }
 .danger-zone { display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; }
 .danger-zone > div { display: flex; flex-direction: column; gap: 4px; max-width: 60ch; }
 
@@ -937,7 +944,7 @@ function renderNav() {
 function updateChrome() { renderNav(); if (view.name === 'home') refresh(); }
 function refreshIf(names) { if (names.includes(view.name)) refresh(); }
 function render(scrollTop) {
-  const views = { home: viewHome, import: viewImport, detail: viewDetail, setup: viewSetup, play: viewPlay, result: viewResult };
+  const views = { home: viewHome, guide: viewGuide, import: viewImport, detail: viewDetail, setup: viewSetup, play: viewPlay, result: viewResult };
   renderNav();
   $main.replaceChildren(views[view.name]());
   if (scrollTop) window.scrollTo(0, 0);
@@ -951,6 +958,7 @@ document.getElementById('backBtn').addEventListener('click', goBack);
 // Every tool sits here so nothing needs scrolling to find: the library, the sets, prompt, backup, install, updates, theme, account.
 const ICONS = {
   library: '<path d="M3 5.5h5l1.6 1.6H17v8.4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/>',
+  help: '<circle cx="10" cy="10" r="7"/><path d="M8 8.1a2 2 0 1 1 2.9 1.8c-.6.3-.9.7-.9 1.3v.4"/><path d="M10 14.1v.1"/>',
   plus: '<path d="M10 4.5v11M4.5 10h11"/>',
   copy: '<rect x="7" y="7" width="9" height="9" rx="1.6"/><path d="M13 7V5.6A1.6 1.6 0 0 0 11.4 4H5.6A1.6 1.6 0 0 0 4 5.6v5.8A1.6 1.6 0 0 0 5.6 13H7"/>',
   download: '<path d="M10 3.5v9M6.2 9 10 12.8 13.8 9M4 16.5h12"/>',
@@ -1011,7 +1019,8 @@ function renderSide() {
   $sideBody.replaceChildren(
     h('nav', { class: 'side-group', 'aria-label': 'Điều hướng' },
       sideItem('library', 'Thư viện', () => go('home'), { current: view.name === 'home' }),
-      sideItem('plus', 'Thêm bộ đề', () => go('import'), { current: view.name === 'import', cls: 'add' })),
+      sideItem('plus', 'Thêm bộ đề', () => go('import'), { current: view.name === 'import', cls: 'add' }),
+      sideItem('help', 'Hướng dẫn sử dụng', () => go('guide'), { current: view.name === 'guide' })),
     h('section', { class: 'side-group' },
       h('h2', null, h('span', null, 'Bộ đề'), h('span', { class: 'num' }, state.sets.length)),
       setItems.length ? setItems : h('p', { class: 'side-credit' }, 'Chưa có bộ đề nào.'),
@@ -1184,7 +1193,7 @@ function viewHome() {
       h('li', null, 'Sao chép prompt mẫu, gửi kèm file đề cho AI (ChatGPT, Claude, Gemini…).'),
       h('li', null, 'Tải file .txt AI tạo ra, chọn file đó ở "Thêm bộ đề" (hoặc dán nội dung vào), kiểm tra rồi lưu.'),
       h('li', null, 'Làm bài, xem lại câu sai, ôn riêng những câu hay sai đến khi thuộc.')),
-    h('div', { class: 'row' }, btn('Sao chép prompt cho AI', copyPrompt), btn('Thêm bộ đề', () => go('import'), 'ghost')));
+    h('div', { class: 'row' }, btn('Sao chép prompt cho AI', copyPrompt), btn('Xem hướng dẫn chi tiết', () => go('guide'), 'ghost')));
   if (firstRun) parts.push(howto);
 
   if (showInstallCard()) parts.push(h('div', { class: 'note ok' },
@@ -1200,6 +1209,112 @@ function viewHome() {
     h('div', { class: 'row' }, btn('Đăng nhập Google', signIn))));
 
   return h('div', { class: 'stack', style: 'gap:24px' }, parts);
+}
+
+/* ---------- Guide (Hướng dẫn sử dụng) ---------- */
+function viewGuide() {
+  const P = (...k) => h('p', null, ...k);
+  const B = t => h('b', null, t);
+  const OL = (...items) => h('ol', { class: 'howto' }, items.map(t => h('li', null, t)));
+  const UL = (...items) => h('ul', { class: 'gl' }, items.map(t => h('li', null, t)));
+  const TIP = (...k) => h('div', { class: 'note info' }, h('span', null, ...k));
+  const sec = (id, title, ...kids) => ({ id, title, el: h('section', { class: 'panel guide-sec', id: 'g-' + id }, h('h2', null, title), ...kids) });
+
+  const sections = [
+    sec('bat-dau', 'Memora là gì',
+      P('Memora biến một file đề trắc nghiệm (Word, PDF, ảnh chụp…) thành bài quiz để ôn thi: có đếm giờ, tính điểm, xem lại câu sai và tự nhớ những câu bạn hay sai để ôn riêng.'),
+      P('App không tự đọc file đề. Bạn nhờ một AI (ChatGPT, Claude, Gemini…) chuyển đề sang dữ liệu theo ', B('prompt mẫu'), ' có sẵn, rồi đưa kết quả vào Memora. Toàn bộ chỉ mất vài phút cho mỗi bộ đề.'),
+      P('Mọi công cụ nằm ở thanh bên trái. Trên điện thoại, bấm nút ☰ ở góc trên để mở.'),
+      h('div', { class: 'row' }, btn('Thêm bộ đề đầu tiên', () => go('import'), 'primary'))),
+
+    sec('them-de', 'Thêm bộ đề bằng AI',
+      OL(
+        h('span', null, 'Bấm ', B('Sao chép prompt cho AI'), ' trong thanh công cụ (hoặc ở trang Thêm bộ đề).'),
+        h('span', null, 'Mở ChatGPT, Claude hoặc Gemini, ', B('đính kèm file đề'), ', dán prompt vào ô chat rồi gửi.'),
+        h('span', null, 'AI trả về một file ', B('.txt'), '. Tải file đó về máy. AI nào không tạo được file sẽ trả về một khối code: bấm nút sao chép của khối code đó.'),
+        h('span', null, 'Vào ', B('Thêm bộ đề'), ', chọn file .txt vừa tải, hoặc dán toàn bộ câu trả lời của AI vào ô (dán thừa chữ cũng được, app tự lọc).'),
+        h('span', null, 'Bấm ', B('Kiểm tra dữ liệu'), ', đọc các thông báo bên dưới, đặt tên bộ đề rồi bấm ', B('Lưu bộ đề'), '.')),
+      h('div', { class: 'row' }, btn('Sao chép prompt cho AI', copyPrompt, 'soft'), btn('Mở trang Thêm bộ đề', () => go('import'))),
+      h('h3', null, 'Đọc các thông báo sau khi kiểm tra'),
+      UL(
+        h('span', null, B('Khớp số câu / Lệch số câu'), ': so số câu AI báo với số câu app đọc được. Bị lệch thì AI có thể đã bỏ sót, hãy so lại với đề.'),
+        h('span', null, B('AI đã tự giải'), ': đề không có đáp án nên AI tự chọn. Các câu này có nhãn "AI giải", nên dò lại.'),
+        h('span', null, B('AI không chắc chắn'), ' và ', B('AI nghi đáp án của đề bị sai'), ': kiểm tra lại các câu được liệt kê trước khi ôn.'),
+        h('span', null, B('Chưa có đáp án'), ': các câu này bị bỏ qua khi làm bài cho đến khi bạn thêm đáp án bằng nút Sửa.')),
+      h('h3', null, 'Đề dài hơn 100 câu'),
+      P('Mặc định AI chia đề thành từng phần 100 câu. Khi app báo "AI mới làm đến câu N", hãy lưu phần đó, bấm ', B('Sao chép câu nhắn "Làm tiếp"'), ', gửi cho AI, rồi nhập phần mới và chọn ', B('Thêm vào bộ đề có sẵn'), ' để nối vào. Câu trùng sẽ tự bị bỏ.'),
+      TIP('Muốn một file duy nhất? Khi dán prompt, ghi thêm yêu cầu của bạn, ví dụ ', B('"làm hết 150 câu vào 1 file"'), '. Yêu cầu của bạn luôn được ưu tiên hơn giới hạn 100 câu.')),
+
+    sec('lam-bai', 'Làm bài',
+      P('Bấm ', B('Làm bài'), ' ở bộ đề, chọn cách làm rồi bấm Bắt đầu:'),
+      UL(
+        h('span', null, B('Ôn tập'), ': chọn xong hiện ngay đúng hay sai kèm giải thích. Trả lời nhanh và đúng liên tiếp được cộng thêm điểm.'),
+        h('span', null, B('Kiểm tra'), ': làm hết rồi mới chấm. Trước khi nộp có thể quay lại đổi đáp án. Nếu đặt giờ, tổng thời gian = số câu × thời gian mỗi câu, hết giờ bài tự nộp.'),
+        h('span', null, B('Số câu'), ', ', B('thời gian mỗi câu'), ' và ', B('xáo trộn'), ' câu hỏi, đáp án. Tắt xáo đáp án nếu đề có lựa chọn kiểu "Cả A và B đều đúng".')),
+      h('h3', null, 'Trong lúc làm'),
+      UL(
+        h('span', null, 'Câu có nhiều đáp án đúng: chọn đủ các đáp án rồi bấm ', B('Xác nhận'), '.'),
+        h('span', null, B('Câu ghi nhớ'), ' (chỉ có một lựa chọn): đọc kỹ rồi bấm vào đáp án để xem giải thích.'),
+        h('span', null, 'Bảng ', B('Tổng quan'), ' bên phải (bên dưới trên điện thoại) cho biết câu nào đúng, sai, chưa làm; bấm số câu để nhảy tới câu đó.'),
+        h('span', null, 'Bấm ', B('Thoát'), ' hai lần để bỏ bài đang làm. Vuốt quay lại trên điện thoại cũng cần hai lần, để tránh lỡ tay.')),
+      h('h3', null, 'Phím tắt trên máy tính'),
+      UL(
+        h('span', null, B('1–9'), ' hoặc ', B('A, B, C…'), ': chọn đáp án.'),
+        h('span', null, B('Enter'), ': xác nhận câu nhiều đáp án, hoặc sang câu tiếp sau khi đã chấm.'),
+        h('span', null, B('← →'), ': chuyển câu trước, câu sau.'))),
+
+    sec('on-tap', 'Ôn lại câu sai và câu hay sai',
+      UL(
+        h('span', null, 'Ở trang ', B('Kết quả'), ', bấm ', B('Làm lại câu sai'), ' để làm ngay những câu vừa sai hoặc bỏ trống.'),
+        h('span', null, B('Câu hay sai'), ' là những câu bạn từng làm sai. App nhớ chúng qua mọi lần làm. Câu nào làm đúng ', B(MASTER_STREAK + ' lần liên tiếp'), ' sẽ tự ra khỏi danh sách.'),
+        h('span', null, 'Ở Thư viện, khung xanh "câu hay sai đang chờ ôn" chỉ ra bộ đề cần ôn nhất; bấm ', B('Ôn ngay'), '.'),
+        h('span', null, 'Thanh màu dưới mỗi bộ đề cho biết số câu ', B('đã thuộc'), ', ', B('hay sai'), ' và ', B('chưa làm'), '.'))),
+
+    sec('quan-ly', 'Quản lý bộ đề',
+      P('Bấm tên bộ đề ở Thư viện hoặc trong thanh công cụ để mở trang bộ đề. Ở đây bạn có thể:'),
+      UL(
+        h('span', null, 'Xem điểm cao nhất, số lần làm và ', B('lịch sử làm bài'), ' (30 lần gần nhất).'),
+        h('span', null, B('Tìm câu hỏi'), ': gõ không dấu cũng tìm được.'),
+        h('span', null, B('Sửa'), ' một câu: sửa nội dung, lựa chọn, đáp án, giải thích. Lưu lại thì nhãn "AI giải" của câu đó cũng được bỏ, coi như bạn đã dò.'),
+        h('span', null, B('Đổi tên'), ', ', B('Thêm câu từ AI'), ', và ', B('Xóa bộ đề'), ' ở cuối trang.'),
+        h('span', null, B('Tải file đề'), ' để gửi cho bạn bè qua Zalo, Messenger. Bạn bè vào Thêm bộ đề và chọn file đó là dùng được ngay.'))),
+
+    sec('luu-tru', 'Lưu trữ, đồng bộ và sao lưu',
+      UL(
+        h('span', null, 'Khi chưa đăng nhập, bộ đề và lịch sử chỉ nằm trên ', B('trình duyệt của máy này'), '. Xóa dữ liệu trình duyệt hoặc đổi máy là mất.'),
+        h('span', null, B('Đăng nhập Google'), ' (cuối thanh công cụ) để lưu lên mạng. Máy khác chỉ cần đăng nhập cùng tài khoản là thấy đủ bộ đề và lịch sử. Đăng xuất không xóa dữ liệu trên máy.'),
+        h('span', null, B('Tải bản sao lưu'), ' trong thanh công cụ để cất một file chứa toàn bộ dữ liệu. ', B('Khôi phục dữ liệu'), ' để nạp lại file đó; dữ liệu được gộp, không mất gì.')),
+      h('div', { class: 'row' },
+        cloud.status === 'out' ? btn('Đăng nhập Google', signIn, 'soft') : null,
+        btn(canDownload() ? 'Tải bản sao lưu' : 'Sao chép bản sao lưu', downloadBackup))),
+
+    sec('cai-app', 'Cài app lên điện thoại',
+      UL(
+        h('span', null, B('Android (Chrome)'), ': bấm ', B('Cài app lên máy'), ' trong thanh công cụ, hoặc menu ⋮ của Chrome → "Cài đặt ứng dụng".'),
+        h('span', null, B('iPhone (Safari)'), ': nút Chia sẻ → "Thêm vào MH chính" → Thêm.'),
+        h('span', null, 'Cài xong, app mở toàn màn hình từ biểu tượng riêng và ', B('vẫn làm bài được khi mất mạng'), '.'),
+        h('span', null, 'Khi có bản mới, đầu trang hiện ', B('Có bản mới của Memora'), '; bấm Cập nhật. Có thể bấm ', B('Kiểm tra cập nhật'), ' để kiểm tra ngay.'),
+        h('span', null, B('Giao diện'), ' trong thanh công cụ đổi giữa Theo máy, Sáng và Tối.')),
+      canInstall() ? h('div', { class: 'row' }, btn('Cài app lên máy', installApp, 'soft')) : null),
+
+    sec('loi', 'Gặp sự cố',
+      UL(
+        h('span', null, B('"Dữ liệu bị cắt giữa chừng"'), ' hoặc ', B('"JSON bị lỗi cú pháp"'), ': câu trả lời của AI bị cụt. Nhờ AI xuất lại, hoặc chia đề thành phần nhỏ hơn (ví dụ "chỉ làm câu 1–50").'),
+        h('span', null, B('Thiếu câu so với đề'), ': nhắn AI làm lại đúng những câu bị thiếu, rồi chọn "Thêm vào bộ đề có sẵn".'),
+        h('span', null, B('Mở link trong Zalo, Messenger'), ' thì không đăng nhập và không cài app được. Hãy mở bằng Chrome hoặc Safari.'),
+        h('span', null, B('Chế độ ẩn danh'), ' không giữ dữ liệu sau khi đóng trang. App sẽ báo đỏ ở Thư viện; hãy mở bằng cửa sổ thường hoặc tải bản sao lưu.'),
+        h('span', null, 'Thấy đáp án sai lúc đang làm bài: sau khi chấm, bấm ', B('Báo sai / sửa câu này'), '. Thay đổi áp dụng từ lần làm sau.')))
+  ];
+
+  const toc = h('nav', { class: 'guide-toc', 'aria-label': 'Mục lục hướng dẫn' },
+    sections.map(s => h('button', { type: 'button', class: 'btn', onclick: () => document.getElementById('g-' + s.id).scrollIntoView({ behavior: 'smooth', block: 'start' }) }, s.title)));
+  return h('div', { class: 'stack', style: 'gap:20px' },
+    h('header', { class: 'title-row' },
+      h('div', { class: 'title-txt' },
+        h('h1', null, 'Hướng dẫn sử dụng'),
+        h('p', { class: 'sub' }, 'Từ lúc có file đề đến lúc thuộc bài, từng bước một. Bấm một mục để nhảy tới.'))),
+    toc,
+    sections.map(s => s.el));
 }
 
 /* ---------- Import ---------- */
