@@ -261,8 +261,11 @@ table.runs tr:last-child td { border-bottom: 0; }
 .err { color: var(--bad); font-size: .88rem; font-weight: 600; }
 #toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%) translateY(20px); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-weight: 600; font-size: .9rem; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 60; width: max-content; max-width: calc(100% - 32px); text-align: center; }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.credit { text-align: center; color: var(--muted); font-size: .8rem; margin-top: 8px; }
+.credit { text-align: center; color: var(--muted); font-size: .8rem; margin-top: 8px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .credit .heart { color: var(--bad); }
+.linkbtn { font: inherit; color: var(--muted); background: none; border: 0; padding: 4px 8px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.linkbtn:hover { color: var(--accent); }
+.update-bar { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
@@ -281,14 +284,34 @@ table.runs tr:last-child td { border-bottom: 0; }
     </div>
     <nav class="row" id="topNav"></nav>
   </header>
+  <div class="note ok update-bar" id="updateBar" role="status" hidden>
+    <span><b>Có bản mới của Memora.</b> Bấm cập nhật để dùng ngay.</span>
+    <button class="btn primary" id="updateBtn" type="button">Cập nhật</button>
+  </div>
   <main id="main"></main>
-  <footer class="credit">Developed by Hminh <span class="heart" aria-label="với tình yêu">♥</span></footer>
+  <footer class="credit">
+    <div>Developed by Hminh <span class="heart" aria-label="với tình yêu">♥</span></div>
+    <button class="linkbtn" id="checkUpdateBtn" type="button">Kiểm tra cập nhật</button>
+  </footer>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script>
 (() => {
 'use strict';
+
+/* ---------- Version fingerprint (for "Có bản mới · Cập nhật") ---------- */
+// Styles + the page frame + this script, as loaded. A freshly fetched copy with a different fingerprint means
+// GitHub has a newer version. Taken first thing, before the app changes anything on the page.
+function pageFingerprint(doc, script) {
+  const s = ((doc.querySelector('style') || {}).textContent || '') // only the app's own first <style>: extensions may add more
+    + ((doc.querySelector('.wrap') || {}).outerHTML || '') + (script ? script.textContent : '');
+  let x = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) { x ^= s.charCodeAt(i); x = Math.imul(x, 0x01000193); }
+  return (x >>> 0).toString(36) + '.' + s.length;
+}
+const RUNNING_FP = pageFingerprint(document, document.currentScript);
+let updateReady = false, newFp = '', checkingUpdate = false, lastUpdateCheck = 0; // see "Updates" at the end
 
 /* ---------- Prompt template for the AI ---------- */
 // Questions per AI reply: sets up to this size must be done in one go; longer ones are split into parts of this size.
@@ -743,6 +766,7 @@ window.addEventListener('popstate', e => {
 function refresh() { render(false); }
 function renderNav() {
   document.getElementById('backBtn').hidden = view.name === 'home' || view.name === 'play'; // the quiz has its own "Thoát"
+  document.getElementById('updateBar').hidden = !updateReady || view.name === 'play'; // never interrupt a quiz
   $nav.replaceChildren();
   if (view.name === 'play') return;
   if (cloud.status === 'in') $nav.append(accountChip());
@@ -1611,6 +1635,55 @@ render(true);
 initCloud();
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+
+/* ---------- Updates ---------- */
+// An installed app is usually resumed, not reloaded, so it would keep running an old copy.
+// Check GitHub for a newer page on start, whenever the app comes back to the screen, and every 30 minutes.
+const online = /^https?:$/.test(location.protocol);
+const SKIP_KEY = 'memora.updateSkip';
+async function checkForUpdate(manual) {
+  if (!online || checkingUpdate) return;
+  const say = msg => { if (manual) toast(msg, 3000, true); };
+  if (!navigator.onLine) { say('Đang mất mạng, chưa kiểm tra được.'); return; }
+  checkingUpdate = true; lastUpdateCheck = Date.now();
+  try {
+    const res = await fetch(location.pathname, { cache: 'no-store' });
+    if (!res.ok) throw new Error(res.status);
+    const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+    const fp = pageFingerprint(doc, [...doc.scripts].find(s => !s.src));
+    let skip = null; try { skip = sessionStorage.getItem(SKIP_KEY); } catch {}
+    // skip: we already reloaded for this exact version and the page still differs (something else edits it), so don't nag.
+    if (fp !== RUNNING_FP && fp !== skip) {
+      updateReady = true; newFp = fp; renderNav();
+      say('Có bản mới. Bấm "Cập nhật" ở đầu trang.');
+    } else say('Bạn đang dùng bản mới nhất.');
+  } catch { say('Chưa kiểm tra được, thử lại sau.'); }
+  checkingUpdate = false;
+}
+async function applyUpdate() {
+  if (quizRunning()) { toast('Làm xong bài này rồi cập nhật nhé.'); return; }
+  toast('Đang cập nhật…', 5000, true);
+  try { sessionStorage.setItem(SKIP_KEY, newFp); } catch {}
+  try {
+    const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+    if (reg) await reg.update().catch(() => {});
+    await fetch(location.pathname, { cache: 'reload' }); // refresh the browser's own copy too
+  } catch {}
+  location.reload();
+}
+document.getElementById('updateBtn').addEventListener('click', applyUpdate);
+document.getElementById('checkUpdateBtn').addEventListener('click', () => {
+  if (!online) { toast('Chỉ kiểm tra được khi mở app từ trang web.'); return; }
+  toast('Đang kiểm tra…', 2000, true);
+  checkForUpdate(true);
+});
+if (online) {
+  setTimeout(() => checkForUpdate(), 4000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && Date.now() - lastUpdateCheck > 60000) checkForUpdate();
+  });
+  setInterval(() => { if (document.visibilityState === 'visible') checkForUpdate(); }, 30 * 60000);
 }
 })();
 </script>
