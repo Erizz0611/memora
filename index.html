@@ -429,6 +429,46 @@ function toast(msg, ms = 2600, urgent = false) {
 function uid() { return 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 const playable = q => q && q.question && q.options.length >= 2 && q.answer.length > 0;
+
+/* ---------- Per-question stats, for "câu hay sai" ---------- */
+// Saved in state.history[setId].qs as { key: { n: tries, w: wrong, s: right-in-a-row, t: last time } }.
+// Keyed by a hash of question + options, so stats survive reordering; editing a question starts it fresh.
+const MASTER_STREAK = 2; // a missed question leaves the "hay sai" list after this many right answers in a row
+function qKey(q) {
+  const s = q.question + '\u0001' + q.options.join('\u0001');
+  let x = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) { x ^= s.charCodeAt(i); x = Math.imul(x, 0x01000193); }
+  return (x >>> 0).toString(36);
+}
+function recordStats(setId, items) {
+  const h0 = state.history[setId] || (state.history[setId] = { best: 0, attempts: 0, runs: [] });
+  const qs = h0.qs || (h0.qs = {});
+  const now = Date.now();
+  for (const it of items) {
+    if (it.skipped) continue; // untouched questions say nothing about what you know
+    const k = qKey(it.q), st = qs[k] || (qs[k] = { n: 0, w: 0, s: 0, t: 0 });
+    st.n++; st.t = now;
+    if (it.ok) st.s++; else { st.w++; st.s = 0; }
+  }
+}
+// Questions still worth drilling: missed at least once and not yet answered right MASTER_STREAK times in a row.
+// Worst first: highest share of wrong answers, then most misses, then most recently tried.
+function weakList(set) {
+  const qs = (state.history[set.id] || {}).qs || {};
+  return set.questions.map((q, i) => ({ i, q, st: qs[qKey(q)] }))
+    .filter(x => x.st && x.st.w > 0 && x.st.s < MASTER_STREAK && playable(x.q))
+    .sort((a, b) => (b.st.w / b.st.n - a.st.w / a.st.n) || (b.st.w - a.st.w) || (b.st.t - a.st.t));
+}
+// Same question seen on two devices: keep the copy with more tries (then the newer one), so merging twice changes nothing.
+function mergeQs(a, b) {
+  const out = Object.assign({}, a || {});
+  for (const [k, st] of Object.entries(b || {})) {
+    if (!st || typeof st !== 'object') continue;
+    const cur = out[k];
+    if (!cur || (st.n || 0) > (cur.n || 0) || ((st.n || 0) === (cur.n || 0) && (st.t || 0) > (cur.t || 0))) out[k] = st;
+  }
+  return out;
+}
 const letterIdx = L => LETTERS.indexOf(L);
 function fmtTime(ms) { const s = Math.round(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
 
@@ -620,6 +660,7 @@ function restoreBackup(text) {
     cur.runs = runs.filter(r => r && !seen.has(r.at) && seen.add(r.at)).sort((a, b) => b.at - a.at).slice(0, 30);
     cur.best = Math.max(cur.best || 0, Number(hIn.best) || 0);
     cur.attempts = Math.max(cur.attempts || 0, Number(hIn.attempts) || 0);
+    if (hIn.qs && typeof hIn.qs === 'object') cur.qs = mergeQs(cur.qs, hIn.qs);
     state.history[id] = cur;
   }
   save();
@@ -677,8 +718,10 @@ function setCard(set) {
   const total = set.questions.length;
   const missing = set.questions.filter(q => !q.answer.length).length;
   const aiCount = set.questions.filter(q => q.aiAnswer).length;
+  const weakN = weakList(set).length;
   const chips = h('div', { class: 'chips' },
     set.sample && h('span', { class: 'chip' }, 'Mẫu'),
+    weakN > 0 && h('span', { class: 'chip warn' }, weakN + ' câu hay sai'),
     missing > 0 && h('span', { class: 'chip warn' }, missing + ' câu thiếu đáp án'),
     aiCount > 0 && h('span', { class: 'chip ai' }, aiCount + ' câu AI giải'));
   const done = hist && hist.attempts;
@@ -688,7 +731,8 @@ function setCard(set) {
     h('p', { class: 'muted small num' }, total + ' câu' + (done ? ` · Cao nhất ${hist.best}% · ${hist.attempts} lần làm` : ' · Chưa làm lần nào')),
     done ? h('div', { class: 'meter', 'aria-hidden': 'true' }, h('i', { style: `width:${hist.best}%` })) : null,
     h('div', { class: 'actions' },
-      btn('Làm bài', () => go('setup', { ref }), 'primary'),
+      btn('Làm bài', () => { state.settings.pool = 'all'; go('setup', { ref }); }, 'primary'),
+      weakN > 0 ? btn('Ôn câu hay sai', () => { state.settings.pool = 'weak'; go('setup', { ref }); }) : null,
       btn('Xem & lịch sử', () => go('detail', { ref })),
       btn(canDownload() ? 'Tải file đề' : 'Sao chép JSON', () => downloadSet(set)),
       confirmBtn('Xóa', 'Bấm lần nữa để xóa', () => { state.sets = state.sets.filter(s => s.id !== set.id); delete state.history[set.id]; state.deleted[set.id] = Date.now(); save(); toast('Đã xóa bộ đề'); refresh(); }, 'ghost danger')));
@@ -892,7 +936,7 @@ function historyPanel(set) {
       h('td', null, h('b', { style: `color:${color(r.pct)}` }, r.pct + '%'), h('span', { class: 'muted' }, ` (${r.correct}/${r.total})`)),
       h('td', null, (r.score || 0).toLocaleString('vi-VN')),
       h('td', null, r.ms ? fmtTime(r.ms) : '–'),
-      h('td', null, r.retry ? h('span', { class: 'chip' }, 'Câu sai') : r.mode === 'test' ? h('span', { class: 'chip accent' }, 'Kiểm tra') : h('span', { class: 'chip ok' }, 'Ôn tập')))))));
+      h('td', null, r.kind === 'weak' ? h('span', { class: 'chip warn' }, 'Câu hay sai') : r.retry ? h('span', { class: 'chip' }, 'Câu sai') : r.mode === 'test' ? h('span', { class: 'chip accent' }, 'Kiểm tra') : h('span', { class: 'chip ok' }, 'Ôn tập')))))));
   return h('section', { class: 'panel stack' }, head,
     h('div', { class: 'spark', 'aria-hidden': 'true' }, runs.slice(0, 20).reverse().map(r => h('i', { style: `height:${Math.max(6, r.pct)}%;background:${color(r.pct)}`, title: r.pct + '%' }))),
     table,
@@ -907,7 +951,7 @@ function viewDetail() {
     h('label', { class: 'field', for: 'detailTitle' }, 'Tên bộ đề', h('div', { class: 'row', style: 'flex-wrap:nowrap' }, titleIn, btn('Đổi tên', () => { set.title = titleIn.value.trim() || set.title; persist(ref, set); toast('Đã đổi tên'); }))),
     h('p', { class: 'muted num' }, `${set.questions.length} câu · ${playableCount} câu làm được` + (set.questions.length - playableCount ? ` · ${set.questions.length - playableCount} câu thiếu đáp án` : '')),
     h('div', { class: 'row' },
-      btn('Làm bài', () => go('setup', { ref }), 'primary big'),
+      btn('Làm bài', () => { state.settings.pool = 'all'; go('setup', { ref }); }, 'primary big'),
       btn(canDownload() ? 'Tải file đề' : 'Sao chép JSON', () => downloadSet(set)),
       btn('Thêm câu từ AI', () => go('import'))));
   const list = h('section', { class: 'stack' },
@@ -917,7 +961,19 @@ function viewDetail() {
         btn('Sửa', () => openEdit(ref, i, refresh), 'ghost'),
         confirmBtn('Xóa', 'Xóa?', () => { set.questions.splice(i, 1); persist(ref, set); refresh(); }, 'ghost danger'))
     }))));
-  return h('div', { class: 'stack', style: 'gap:20px' }, head, historyPanel(set), list);
+  return h('div', { class: 'stack', style: 'gap:20px' }, head, weakPanel(set, ref), historyPanel(set), list);
+}
+function weakPanel(set, ref) {
+  const weak = weakList(set);
+  if (!weak.length) return null;
+  const top = weak.slice(0, 10);
+  return h('section', { class: 'panel stack' },
+    h('div', { class: 'sec-head' }, h('h2', null, `Câu hay sai (${weak.length})`),
+      h('span', { class: 'muted small' }, `Làm đúng ${MASTER_STREAK} lần liên tiếp thì câu sẽ ra khỏi danh sách`)),
+    h('div', { class: 'row' },
+      btn(`Ôn ${weak.length} câu hay sai`, () => { state.settings.pool = 'weak'; go('setup', { ref }); }, 'primary')),
+    h('div', { class: 'qlist' }, top.map(x => qItem(x.q, x.i, { note: `Sai ${x.st.w}/${x.st.n} lần làm` + (x.st.s ? ` · vừa đúng ${x.st.s} lần liên tiếp` : '') }))),
+    weak.length > top.length ? h('p', { class: 'muted small' }, `Đang hiện ${top.length} câu sai nhiều nhất.`) : null);
 }
 
 /* ---------- Setup ---------- */
@@ -932,8 +988,13 @@ function viewSetup() {
     inp.addEventListener('change', () => { onChange(val); save(); });
     return h('label', { for: id }, inp, h('span', null, label));
   }));
-  const counts = [[0, `Tất cả (${n})`], ...[10, 20, 30, 50].filter(c => c < n).map(c => [c, c + ' câu'])];
+  const weak = weakList(set);
+  if (!weak.length) s.pool = 'all';
+  const isWeak = s.pool === 'weak';
+  const poolN = isWeak ? weak.length : n;
+  const counts = [[0, `Tất cả (${poolN})`], ...[10, 20, 30, 50].filter(c => c < poolN).map(c => [c, c + ' câu'])];
   if (!counts.some(c => c[0] === s.count)) s.count = 0;
+  const start = () => isWeak ? startPlay(ref, weak.map(x => x.i), 'weak') : startPlay(ref);
   const shQ = h('input', { type: 'checkbox', id: 'shuffleQ', checked: s.shuffleQ }); shQ.addEventListener('change', () => { s.shuffleQ = shQ.checked; save(); });
   const shO = h('input', { type: 'checkbox', id: 'shuffleO', checked: s.shuffleO }); shO.addEventListener('change', () => { s.shuffleO = shO.checked; save(); });
   const isTest = s.mode === 'test';
@@ -945,7 +1006,13 @@ function viewSetup() {
       h('p', { class: 'muted small' }, isTest
         ? 'Làm hết rồi bấm "Nộp bài" mới chấm điểm. Trước khi nộp có thể quay lại đổi đáp án.'
         : 'Chọn xong hiện ngay đúng hay sai kèm giải thích.')),
-    h('div', { class: 'stack', style: 'gap:8px' }, h('b', null, 'Số câu'), group('count', counts, s.count, v => s.count = v)),
+    weak.length ? h('div', { class: 'stack', style: 'gap:8px' }, h('b', null, 'Làm câu nào'),
+      group('pool', [['all', 'Tất cả câu'], ['weak', `Câu hay sai (${weak.length})`]], isWeak ? 'weak' : 'all', v => { s.pool = v; refresh(); }),
+      h('p', { class: 'muted small' }, isWeak
+        ? `Các câu bạn từng làm sai, câu sai nhiều nhất trước. Câu nào làm đúng ${MASTER_STREAK} lần liên tiếp sẽ tự ra khỏi danh sách.`
+        : 'Làm toàn bộ bộ đề.')) : null,
+    h('div', { class: 'stack', style: 'gap:8px' }, h('b', null, 'Số câu'), group('count', counts, s.count, v => s.count = v),
+      isWeak && s.count ? h('p', { class: 'muted small' }, 'Lấy những câu sai nhiều nhất trước.') : null),
     h('div', { class: 'stack', style: 'gap:8px' }, h('b', null, 'Thời gian mỗi câu'),
       group('timer', [[0, 'Không giới hạn'], [10, '10 giây'], [20, '20 giây'], [30, '30 giây'], [60, '60 giây']], s.timer, v => s.timer = v),
       isTest ? h('p', { class: 'muted small' }, 'Ở chế độ Kiểm tra, tổng thời gian làm bài = số câu × thời gian mỗi câu. Hết giờ bài tự nộp.') : null),
@@ -953,7 +1020,7 @@ function viewSetup() {
       h('label', { class: 'switch', for: 'shuffleQ' }, shQ, 'Xáo trộn thứ tự câu hỏi'),
       h('label', { class: 'switch', for: 'shuffleO' }, shO, 'Xáo trộn thứ tự đáp án'),
       h('p', { class: 'muted small', style: 'padding-left:28px' }, 'Tắt xáo đáp án nếu đề có lựa chọn kiểu "Cả A và B đều đúng".')),
-    h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn primary big', disabled: n === 0, onclick: () => startPlay(ref) }, isTest ? 'Bắt đầu kiểm tra' : 'Bắt đầu ôn tập'), btn('Quay lại', () => go('home'), 'ghost')));
+    h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn primary big', disabled: n === 0, onclick: start }, isWeak ? 'Bắt đầu ôn câu hay sai' : isTest ? 'Bắt đầu kiểm tra' : 'Bắt đầu ôn tập'), btn('Quay lại', () => go('home'), 'ghost')));
 }
 
 /* ---------- Play ---------- */
@@ -964,11 +1031,14 @@ function stopTimer() { cancelAnimationFrame(raf); raf = 0; }
 const isRight = it => { const c = it.q.answer.map(letterIdx), ch = [...it.sel].map(d => it.order[d]); return ch.length > 0 && ch.length === c.length && ch.every(x => c.includes(x)); };
 const answeredCount = p => p.items.filter(it => p.mode === 'test' ? it.sel.size > 0 : it.done).length;
 function fmtLeft(ms) { const s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
-function startPlay(ref, onlyQis) {
+// kind: 'full' = whole set, 'retry' = the misses of the last run, 'weak' = questions often missed (onlyQis comes worst first).
+function startPlay(ref, onlyQis, kind) {
   const set = getSet(ref); if (!set) return;
   const s = state.settings;
+  kind = kind || (onlyQis ? 'retry' : 'full');
   let qis = (onlyQis || set.questions.map((_, i) => i)).filter(i => playable(set.questions[i]));
   if (!qis.length) { toast('Không còn câu nào có đáp án để làm.'); return; }
+  if (kind === 'weak' && s.count && s.count < qis.length) qis = qis.slice(0, s.count); // keep the worst ones
   if (s.shuffleQ) shuffle(qis);
   if (!onlyQis && s.count && s.count < qis.length) qis = qis.slice(0, s.count);
   const items = qis.map(qi => {
@@ -978,7 +1048,7 @@ function startPlay(ref, onlyQis) {
     return { qi, q, order, multi: q.answer.length > 1, sel: new Set(), done: false, ok: false, gain: 0, timeout: false, left: s.timer * 1000 };
   });
   const mode = s.mode === 'test' ? 'test' : 'practice';
-  play = { ref, setId: set.id, title: set.title, items, i: 0, mode, timer: s.timer, startedAt: Date.now(), retry: !!onlyQis,
+  play = { ref, setId: set.id, title: set.title, items, i: 0, mode, timer: s.timer, startedAt: Date.now(), retry: !!onlyQis, kind,
     score: 0, streak: 0, bestStreak: 0, finished: false, justAnswered: -1,
     testDeadline: mode === 'test' && s.timer ? Date.now() + s.timer * 1000 * items.length : 0 };
   enterQuestion();
@@ -1166,8 +1236,9 @@ function finish() {
   p.log = p.items.map(it => ({ qi: it.qi, q: it.q, chosen: [...it.sel].map(d => LETTERS[it.order[d]]).sort(), ok: it.ok, skipped: it.skipped }));
   p.duration = Date.now() - p.startedAt;
   const pct = Math.round(p.correct / p.items.length * 100);
-  const h0 = state.history[p.setId] || { best: 0, attempts: 0 };
-  h0.runs = [{ at: Date.now(), pct, correct: p.correct, total: p.items.length, score: p.score, ms: p.duration, retry: p.retry, mode: p.mode }, ...(h0.runs || [])].slice(0, 30);
+  recordStats(p.setId, p.items);
+  const h0 = state.history[p.setId];
+  h0.runs = [{ at: Date.now(), pct, correct: p.correct, total: p.items.length, score: p.score, ms: p.duration, retry: p.retry, kind: p.kind, mode: p.mode }, ...(h0.runs || [])].slice(0, 30);
   if (!p.retry) { h0.best = Math.max(h0.best || 0, pct); h0.attempts = (h0.attempts || 0) + 1; h0.last = pct; }
   h0.lastAt = Date.now();
   state.history[p.setId] = h0;
@@ -1206,7 +1277,9 @@ function viewResult() {
   const skipped = p.log.filter(l => l.skipped).length;
   const hist = state.history[p.setId];
   const verdict = pct >= 90 ? 'Xuất sắc! Bạn nắm rất chắc bộ đề này.' : pct >= 70 ? 'Khá tốt! Ôn lại vài câu sai là ổn.' : pct >= 50 ? 'Tạm được. Làm lại câu sai thêm vài lượt nhé.' : 'Cần ôn thêm. Xem kỹ giải thích các câu sai bên dưới.';
-  const modeName = p.retry ? 'Làm lại câu sai' : (p.mode === 'test' ? 'Kiểm tra' : 'Ôn tập');
+  const modeName = p.kind === 'weak' ? 'Ôn câu hay sai' : p.retry ? 'Làm lại câu sai' : (p.mode === 'test' ? 'Kiểm tra' : 'Ôn tập');
+  const set = getSet(p.ref);
+  const weak = set ? weakList(set) : [];
   const tiles = p.mode === 'test'
     ? [[`${p.correct}/${total}`, 'Câu đúng'], [total - p.correct - skipped, 'Câu sai'], [skipped, 'Bỏ trống'], [fmtTime(p.duration), 'Thời gian']]
     : [[`${p.correct}/${total}`, 'Câu đúng'], [p.score.toLocaleString('vi-VN'), 'Điểm'], [skipped ? skipped : p.bestStreak, skipped ? 'Bỏ qua' : 'Chuỗi dài nhất'], [fmtTime(p.duration), 'Thời gian']];
@@ -1217,9 +1290,13 @@ function viewResult() {
       h('p', null, verdict)),
     h('div', { class: 'score' }, tiles.map(([v, l]) => h('div', null, h('b', null, v), h('span', null, l)))),
     !p.retry && hist ? h('p', { class: 'muted small num' }, `Cao nhất của bạn với bộ đề này: ${hist.best}% · ${hist.attempts} lần làm`) : null,
+    p.kind === 'weak' ? h('p', { class: 'muted small num' }, weak.length
+      ? `Còn ${weak.length} câu hay sai. Câu nào làm đúng ${MASTER_STREAK} lần liên tiếp sẽ ra khỏi danh sách.`
+      : 'Bạn đã thuộc hết các câu hay sai của bộ đề này.') : null,
     h('div', { class: 'row' },
       missed.length ? btn(`Làm lại ${missed.length} câu sai${skipped ? ' và bỏ trống' : ''}`, () => startPlay(p.ref, missed.map(w => w.qi)), 'primary big') : null,
-      btn('Làm lại từ đầu', () => startPlay(p.ref), missed.length ? 'big' : 'primary big'),
+      weak.length ? btn(`Ôn ${weak.length} câu hay sai`, () => startPlay(p.ref, weak.map(x => x.i), 'weak'), missed.length ? 'big' : 'primary big') : null,
+      btn('Làm lại từ đầu', () => startPlay(p.ref), missed.length || weak.length ? 'big' : 'primary big'),
       btn('Xem lịch sử', () => go('detail', { ref: p.ref }), 'ghost big'),
       btn('Về thư viện', () => go('home'), 'ghost big')));
   const parts = [head];
@@ -1315,6 +1392,8 @@ function mergeHistory(a, b) {
     const seen = new Set();
     const runs = [...(x.runs || []), ...(y.runs || [])].filter(r => r && !seen.has(r.at) && seen.add(r.at)).sort((p, q) => q.at - p.at).slice(0, 30);
     const h1 = { best: Math.max(x.best || 0, y.best || 0), attempts: Math.max(x.attempts || 0, y.attempts || 0), runs };
+    const qs = mergeQs(x.qs, y.qs);
+    if (Object.keys(qs).length) h1.qs = qs;
     const latest = (x.lastAt || 0) >= (y.lastAt || 0) ? x : y;
     if (latest.last != null) h1.last = latest.last;
     if (latest.lastAt) h1.lastAt = latest.lastAt;
